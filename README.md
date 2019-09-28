@@ -19,50 +19,80 @@ get get -u github.com/ifaceless/portal
 
 Full example can be found [here](./examples/todo).
 
+## Model definitions
+
 ```go
-type SubscriptionSchema struct {
-	ID          int64  `json:"id,omitempty"`
-	Title       string `json:"title,omitempty"`
-	Description string `json:"description,omitempty"`
+type UserModel struct {
+	ID int
 }
 
-// SubscriptionModel defines database table
-type SubscriptionModel struct {
-	ID          int64 `gorm:"PRIMARY_KEY"`
-	Title       string
-	Description string
+func (u *UserModel) Fullname() string {
+	// suppose we get user fullname from RPC
+	return fmt.Sprintf("user:%d", u.ID)
+}
+
+type TaskModel struct {
+	ID     int `gorm:"PRIMARY_KEY,AUTO_INCREMENT"`
+	UserID int
+	Title  string
+}
+
+// User returns a user object.
+func (t *TaskModel) User() *UserModel {
+	return &UserModel{t.UserID}
 }
 ```
 
-Dump to one:
+## Schema Definitions
 
-```golang
+```go
+type UserSchema struct {
+	ID   string `json:"id,omitempty"`
+	// Get user name from `UserModel.Fullname()`
+	Name string `json:"name,omitempty" portal:"attr:Fullname"`
+}
+
+type TaskSchema struct {
+	ID          string      `json:"id,omitempty"`
+	Title       string      `json:"title,omitempty"`
+	// Get description from custom method `GetDescription()`
+	Description string      `json:"description,omitempty" portal:"meth:GetDescription"`
+	// UserSchema is nested to task schema
+	User        *UserSchema `json:"user,omitempty" portal:"nested"`
+}
+
+func (ts *TaskSchema) GetDescription(model *model.TaskModel) string {
+	return "Custom description"
+}
+```
+
+## Serialize examples
+
+```go
+ctx := context.Background()
 chell := portal.New()
 
-model := &SubscriptionModel{...}    // Suppose data is loaded
-var dest SubscriptionSchema
-chell.Dump(ctx, model, &dest)
+// write to a specified task schema.
+var taskSchema schema.TaskSchema
+chell.Dump(ctx, &task, &taskSchema)
+// {"id":"4096","title":"Finish your jobs.","description":"Custom description","user":{"id":"1024","name":"user:1024"}}
+data, _ := json.Marshal(taskSchema)
 
-// marshal to JSON
-data, _ := json.Marshal(&dest)
+// select specified fields
+chell.Only("Title").Dump(ctx, &task, &taskSchema)
+// {"title":"Finish your jobs."}
+data, _ := json.Marshal(taskSchema)
 
-// Select fileds to fill
-chell.Only("ID").Dump(ctx, model, &dest)
+// ignore specified fields
+chell.Exclude("ID", "Description").Dump(ctx, &task, &taskSchema)
+// {"title":"Finish your jobs.","user":{"id":"1024","name":"user:1024"}}
+data, _ := json.Marshal(taskSchema)
 
-// Exclude fields
-chell.Exclude("ID", "Title").Dump(ctx, model, &dest)
-```
-
-Dump to many:
-
-```golang
-var dest []SubscriptionSchema
-
-models := []SubscriptionModel{}{...}
-chell.DumpMany(ctx, models, &dest)
-
-// marshal to JSON
-data, _ := json.Marshal(&dest)
+// write to a slice of task schema
+var taskSchemas []schema.TaskSchema
+chell.Only("ID", "Title").DumpMany(context.Background(), tasks, &taskSchemas)
+// [{"title":"Task #1"},{"id":"1","title":"Task #2"}]
+data, _ := json.Marshal(taskSchema)
 ```
 
 # License

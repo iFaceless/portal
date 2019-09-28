@@ -2,7 +2,6 @@ package model
 
 import "fmt"
 
-// model definitions
 type UserModel struct {
 	ID int
 }
