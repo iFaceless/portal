@@ -3,7 +3,9 @@ It's a lightweight package which simplifies Go object serialization. Inspired he
 
 portal can be used to:
 - **Validate** input data.
-- **Serialize** app-level objects to specified structs. The serialized objects can be rendered to any standard formats like JSON for a HTTP API.
+- **Serialize** app-level objects to specified objects (schema structs). The serialized objects can be rendered to any standard formats like JSON for an HTTP API.
+
+Most importantly, if some fileds of a schema have different data sources (which means multiple network connections maybe), portal could **spawn several goroutines to retrieve fields' data concurrently** if you prefer.
 
 # Install
 
