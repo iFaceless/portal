@@ -43,6 +43,6 @@ Dump to many:
 ```golang
 var dest []SubscriptionSchema
 
-models := []SubscriptionModel{}{...}    // 数据库中加载了一列
+models := []SubscriptionModel{}{...}
 chell.DumpMany(ctx, models, &dest)
 ```
