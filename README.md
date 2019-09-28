@@ -66,7 +66,7 @@ func (ts *TaskSchema) GetDescription(model *model.TaskModel) string {
 }
 ```
 
-## Serialize examples
+## Serialization examples
 
 ```go
 ctx := context.Background()
