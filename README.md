@@ -45,6 +45,12 @@ chell.Dump(ctx, model, &dest)
 
 // marshal to JSON
 data, _ := json.Marshal(&dest)
+
+// Select fileds to fill
+chell.Only("ID").Dump(ctx, model, &dest)
+
+// Exclude fields
+chell.Exclude("ID", "Title").Dump(ctx, model, &dest)
 ```
 
 Dump to many:

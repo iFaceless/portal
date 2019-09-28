@@ -1,5 +1,3 @@
-// Portal 中针对 Table 的一些接口设计参照了 mashmallow-python。尽可能降低学习成本，
-// 方便快速入门使用！
 package portal
 
 import (
@@ -13,15 +11,10 @@ var (
 	ConcurrentDumpingPoolSize = 10
 )
 
-// Chell 用于维护完成的 Table 相关状态及对外的接口
-// Chell 是传送门（Portal）中的女主角
 type Chell struct {
 	schema interface{}
 
-	// 白名单字段
-	onlyFieldNames []string
-
-	// 黑名单字段
+	onlyFieldNames     []string
 	excludedFieldNames []string
 }
 
@@ -33,7 +26,6 @@ func New() *Chell {
 	return chell
 }
 
-// Dump 方法用于将指定的结构体渲染成指定的 Table 结构体
 func (c *Chell) Dump(ctx context.Context, src interface{}, dest interface{}) error {
 	toSchema := NewSchema(dest)
 	toSchema.SetOnlyFields(c.onlyFieldNames...)
@@ -82,7 +74,6 @@ func (c *Chell) dumpAsyncFields(ctx context.Context, src interface{}, dest *Sche
 		wg.Add(1)
 		go func(f *Field) {
 			defer wg.Done()
-			// src 是从输入的 src 中提取到的值
 			logger.Debugf("[portal.chell] processing sync field '%s'", field)
 			val, err := dest.FieldValueFromData(ctx, f, src)
 			logger.Debugf("[portal.chell] sync field '%s' got value '%v'", field, val)
@@ -113,7 +104,6 @@ func (c *Chell) dumpAsyncFields(ctx context.Context, src interface{}, dest *Sche
 
 func (c *Chell) dumpField(ctx context.Context, src interface{}, field *Field) error {
 	defer func() {
-		// 提供一个更加明显的错误提示，防止出现 panic 时，也不知道是哪个字段出错导致
 		if err := recover(); err != nil {
 			err = fmt.Sprintf("failed to dump field %s, src is %v: %s", field, src, err)
 		}
@@ -124,7 +114,6 @@ func (c *Chell) dumpField(ctx context.Context, src interface{}, field *Field) er
 		return nil
 	}
 
-	// 如果输入的 src 类型和 field 对应的 schema 类型相同，那么可以直接赋值
 	if AreIdenticalType(src, field.Field.Value()) {
 		return field.SetValue(src)
 	}
@@ -191,7 +180,6 @@ func (c *Chell) dumpFieldNestedMany(ctx context.Context, src interface{}, field 
 	return nil
 }
 
-// MustDump 方法用于将指定的结构体渲染成指定的 Table 结构体，并在发生错误时自动 panic
 func (c *Chell) MustDump(ctx context.Context, src interface{}, dump interface{}) {
 	err := c.Dump(ctx, src, dump)
 	if err != nil {
@@ -199,7 +187,6 @@ func (c *Chell) MustDump(ctx context.Context, src interface{}, dump interface{})
 	}
 }
 
-// DumpMany 方法用于将指定的结构体渲染成指定的 Table 结构体列表
 func (c *Chell) DumpMany(ctx context.Context, src interface{}, dest interface{}) error {
 	return c.dumpMany(ctx, src, dest)
 }
@@ -265,8 +252,6 @@ func (c *Chell) dumpMany(ctx context.Context, src interface{}, dest interface{})
 	return nil
 }
 
-// MustDumpMany 方法用于将指定的结构体渲染成指定的 Table 结构体列表，
-// 并在发生异常时自动 panic
 func (c *Chell) MustDumpMany(ctx context.Context, src interface{}, dest interface{}) {
 	err := c.DumpMany(ctx, src, dest)
 	if err != nil {
@@ -274,14 +259,12 @@ func (c *Chell) MustDumpMany(ctx context.Context, src interface{}, dest interfac
 	}
 }
 
-// Only 只选定特定的字段处理
 func (c *Chell) Only(fields ...string) *Chell {
 	cpy := c.clone()
 	cpy.onlyFieldNames = fields
 	return cpy
 }
 
-// Exclude 处理时忽略特定的字段
 func (c *Chell) Exclude(fields ...string) *Chell {
 	cpy := c.clone()
 	cpy.excludedFieldNames = fields

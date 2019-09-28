@@ -34,7 +34,6 @@ func (f *Field) String() string {
 	return f.schema.Name() + "." + f.Name()
 }
 
-// SetValue 处理输入数值，进行转换后，输出参数
 func (f *Field) SetValue(v interface{}) error {
 	realValue, err := f.realInputValue(v)
 	if err != nil {
@@ -43,10 +42,8 @@ func (f *Field) SetValue(v interface{}) error {
 
 	convertedValue, err := Convert(realValue, f.Value())
 	if err != nil {
-		// 间接赋值
 		return f.setIndirectly(realValue)
 	} else {
-		// 直接赋值
 		return f.Set(convertedValue)
 	}
 }
@@ -162,7 +159,6 @@ func (f *Field) NestedExcludeNames() (names []string) {
 	return
 }
 
-// Async 表示该字段值的获取是否需要启动子 goroutine 完成
 func (f *Field) Async() bool {
 	return f.tagHasOption("ASYNC")
 }

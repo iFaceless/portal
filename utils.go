@@ -145,7 +145,6 @@ func IsNil(in interface{}) bool {
 	}
 }
 
-// AreIdenticalType 判读是否为相同的类型
 func AreIdenticalType(m, n interface{}) bool {
 	return reflect.TypeOf(m).ConvertibleTo(reflect.TypeOf(n))
 }

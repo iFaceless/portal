@@ -10,12 +10,12 @@ import (
 	"github.com/spf13/cast"
 )
 
-// Convert 用于将指定类型数据转换成目标类型数据
-// 需要考虑的情况如下：
-// from 为值类型，to 为对应的指针类型
-// from 为对应指针类型，to 为值类型
-// from 为值类型，to 为值类型
-// from 和 to 同为指针类型
+// Convert converts value from src type to target type
+// Conditions should be considered carefully:
+// - from is value type, to is a pointer type
+// - from is pointer type，to is value type
+// - from is value type, to is value type
+// - from and to are all pointer type
 func Convert(from interface{}, to interface{}) (out interface{}, err error) {
 	if isEmptyValue(from) {
 		return nil, fmt.Errorf("empty input value: %s", from)
@@ -132,7 +132,7 @@ func Convert(from interface{}, to interface{}) (out interface{}, err error) {
 		return convertUsingReflect(to, from)
 	}
 
-	// 上面的 cast 如果有问题，尝试借助 reflect 转换下
+	// die trying...
 	if err != nil {
 		out, err = convertUsingReflect(to, from)
 	}

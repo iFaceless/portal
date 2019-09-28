@@ -136,7 +136,6 @@ func (s *Schema) SetExcludeFields(fields ...string) {
 	}
 }
 
-// Name 返回 Table 结构体名称
 func (s *Schema) Name() string {
 	return StructName(s.RawValue)
 }
