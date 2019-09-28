@@ -12,10 +12,12 @@ Most importantly, if some fileds of a schema have different data sources, portal
 # Install
 
 ```
-get get -u github.com/iFaceless/portal
+get get -u github.com/ifaceless/portal
 ```
 
 # Quickstart
+
+Full example can be found [here](./examples/todo).
 
 ```go
 type SubscriptionSchema struct {
