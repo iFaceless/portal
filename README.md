@@ -54,3 +54,7 @@ chell.DumpMany(ctx, models, &dest)
 // marshal to JSON
 data, _ := json.Marshal(&dest)
 ```
+
+# License
+
+[portal](https://github.com/iFaceless/portal) is licensed under the [MIT license](./LICENSE). Please feel free and have fun~
