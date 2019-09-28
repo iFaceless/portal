@@ -1,7 +1,7 @@
 # What's portal
 It's a lightweight package which simplifies Go object serialization. Inspired heavily by [marshmallow](https://github.com/marshmallow-code/marshmallow), but with concurrency builtin for better performance.
 
-portal can be used to:
+[portal](https://github.com/iFaceless/portal/) can be used to:
 - **Validate** input data.
 - **Serialize** app-level objects to specified objects (schema structs). The serialized objects can be rendered to any standard formats like JSON for an HTTP API.
 
@@ -10,7 +10,7 @@ Most importantly, if some fileds of a schema have different data sources (which 
 # Install
 
 ```
-get get -u github.com/ifaceless/portal
+get get -u github.com/iFaceless/portal
 ```
 
 # Quickstart
@@ -38,6 +38,9 @@ chell := portal.New()
 model := &SubscriptionModel{...}    // Suppose data is loaded
 var dest SubscriptionSchema
 chell.Dump(ctx, model, &dest)
+
+// marshal to JSON
+data, _ := json.Marshal(&dest)
 ```
 
 Dump to many:
@@ -47,4 +50,7 @@ var dest []SubscriptionSchema
 
 models := []SubscriptionModel{}{...}
 chell.DumpMany(ctx, models, &dest)
+
+// marshal to JSON
+data, _ := json.Marshal(&dest)
 ```
