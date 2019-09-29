@@ -1,0 +1,18 @@
+language: go
+
+go:
+  - master
+  - 1.11.x
+  - 1.12.x
+  - 1.13.x
+
+before_install:
+  - go get -v golang.org/x/lint/golint
+  - go get -v golang.org/x/tools/cmd/cover
+  - go get -v github.com/mattn/goveralls
+  - export GO111MODULE=on
+
+script:
+  - go mod tidy
+  - go test -v -covermode=atomic -coverprofile=coverage.out -race
+  - goveralls -coverprofile=coverage.out -service=travis-ci
