@@ -4,10 +4,12 @@
 It's a lightweight package which simplifies Go object serialization. Inspired heavily by [marshmallow](https://github.com/marshmallow-code/marshmallow), but with concurrency builtin for better performance.
 
 [portal](https://github.com/iFaceless/portal/) can be used to:
-- **Validate** input data.
+- **Validate** input data (not ready).
 - **Serialize** app-level objects to specified objects (schema structs). The serialized objects can be rendered to any standard formats like JSON for an HTTP API.
 
 Most importantly, if some fields of a schema have different data sources, portal could **spawn several goroutines to retrieve fields' data concurrently** if you prefer.
+
+*Note: currently, [portal](https://github.com/iFaceless/portal/) is still in ALPHA stage, not production ready yet. The first stable version will be released in a few weeks, so stay tuned~*
 
 # Install
 
