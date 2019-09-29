@@ -40,7 +40,7 @@ func printFullFields(task *model.TaskModel) {
 
 func printOnlyFields(task *model.TaskModel, only ...string) {
 	var taskSchema schema.TaskSchema
-	err := portal.New().Only(only...).Dump(&taskSchema, task)
+	err := portal.Dump(&taskSchema, task, portal.Only(only...))
 	if err != nil {
 		panic(err)
 	}
@@ -60,7 +60,7 @@ func printMany() {
 		})
 	}
 
-	err := portal.New().Only("ID", "Title").Dump(&taskSchemas, tasks)
+	err := portal.Dump(&taskSchemas, tasks, portal.Only("ID", "Title"))
 	if err != nil {
 		panic(err)
 	}

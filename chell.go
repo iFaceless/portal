@@ -26,12 +26,17 @@ func New() *Chell {
 	return chell
 }
 
-func Dump(dst interface{}, src interface{}) error {
-	return New().Dump(dst, src)
+func Dump(dst, src interface{}, opts ...Option) error {
+	return DumpWithContext(context.TODO(), dst, src, opts...)
 }
 
-func DumpWithContext(ctx context.Context, dst interface{}, src interface{}) error {
-	return New().DumpWithContext(ctx, dst, src)
+func DumpWithContext(ctx context.Context, dst, src interface{}, opts ...Option) error {
+	chell := New()
+	for _, opt := range opts {
+		opt(chell)
+	}
+
+	return chell.DumpWithContext(ctx, dst, src)
 }
 
 func (c *Chell) Dump(dst, src interface{}) error {
