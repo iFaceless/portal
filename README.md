@@ -65,6 +65,8 @@ type TaskSchema struct {
 	Description string      `json:"description,omitempty" portal:"meth:GetDescription"`
 	// UserSchema is nested to task schema
 	User        *UserSchema `json:"user,omitempty" portal:"nested"`
+	// Only need username for simple user schema
+	SimpleUser  *UserSchema `json:"simple_user,omitempty" portal:"nested;only:Name;attr:User"`
 }
 
 func (ts *TaskSchema) GetDescription(model *model.TaskModel) string {
@@ -92,6 +94,11 @@ func main()  {
     // select specified fields
     portal.Dump(&taskSchema, &taskModel, portal.Only("Title"))
     // data: {"title":"Finish your jobs."}
+    data, _ := json.Marshal(taskSchema)
+    
+    // select nested only fields with tag hint
+    portal.Dump(&taskSchema, &taskModel, portal.Only("User", "SimpleUser"))
+    // data: {"user":{"id":"1","name":"user:1"},"simple_user":{"name":"user:1"}}
     data, _ := json.Marshal(taskSchema)
  
     // ignore specified fields

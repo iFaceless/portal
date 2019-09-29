@@ -12,6 +12,7 @@ type TaskSchema struct {
 	Title       string      `json:"title,omitempty"`
 	Description string      `json:"description,omitempty" portal:"meth:GetDescription"`
 	User        *UserSchema `json:"user,omitempty" portal:"nested"`
+	SimpleUser  *UserSchema `json:"simple_user,omitempty" portal:"nested;only:Name;attr:User"`
 }
 
 func (ts *TaskSchema) GetDescription(model *model.TaskModel) string {

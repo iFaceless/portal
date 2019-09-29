@@ -4,11 +4,13 @@ import (
 	"context"
 	"errors"
 	"reflect"
+	"regexp"
 	"sync"
 )
 
 var (
 	ConcurrentDumpingPoolSize = 10
+	fieldFilterPattern, _     = regexp.Compile(`(\w+)`)
 )
 
 type Chell struct {
