@@ -1,4 +1,6 @@
+[![Build Status](https://travis-ci.com/iFaceless/portal.svg?branch=master)](https://travis-ci.com/iFaceless/portal)
 [![Coverage Status](https://coveralls.io/repos/github/iFaceless/portal/badge.svg?branch=master)](https://coveralls.io/github/iFaceless/portal?branch=master)
+[![Go Report Card](https://goreportcard.com/badge/github.com/iFaceless/portal)](https://goreportcard.com/report/github.com/iFaceless/portal)
 
 # What's portal?
 ![portal game](https://s2.ax1x.com/2019/09/28/u1TnEt.jpg)
