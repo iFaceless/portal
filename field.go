@@ -164,7 +164,7 @@ func (f *Field) Async() bool {
 }
 
 func parseTagSettings(s string) map[string]string {
-	settings := make(map[string]string, 0)
+	settings := make(map[string]string)
 	for _, item := range strings.Split(s, ";") {
 		parts := strings.Split(item, ":")
 		if len(parts) > 1 {
