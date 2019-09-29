@@ -16,7 +16,7 @@ var (
 type Field struct {
 	*structs.Field
 	settings  map[string]string
-	isIgnored bool
+	isIgnored bool //nolint
 	schema    *Schema
 }
 

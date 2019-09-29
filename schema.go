@@ -17,7 +17,7 @@ type Schema struct {
 func NewSchema(v interface{}) *Schema {
 	sch := &Schema{
 		schemaStruct:        structs.New(v),
-		availableFieldNames: make(map[string]bool, 0),
+		availableFieldNames: make(map[string]bool),
 		RawValue:            v,
 	}
 
@@ -87,21 +87,23 @@ func (s *Schema) FieldValueFromData(ctx context.Context, field *Field, v interfa
 		}
 		return ret, nil
 	} else if field.HasChainingAttrs() {
-		val, err = GetNestedValue(ctx, v, field.ChainingAttrs())
+		return GetNestedValue(ctx, v, field.ChainingAttrs())
 	} else {
 		if field.IsNested() {
-			val, err = GetNestedValue(ctx, v, []string{field.Name()})
+			return GetNestedValue(ctx, v, []string{field.Name()})
 		} else {
 			f, ok := src.FieldOk(field.Name())
 			if ok {
 				val = f.Value()
 			} else {
-				val, err = GetNestedValue(ctx, v, []string{field.Name()})
+				v, e := GetNestedValue(ctx, v, []string{field.Name()})
+				val = v
+				err = e
 			}
 		}
 	}
 
-	return val, nil
+	return
 }
 
 func (s *Schema) SetOnlyFields(fields ...string) {

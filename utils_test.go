@@ -108,6 +108,7 @@ func (b *Book) Plus(ctx context.Context, v int) int {
 	return v + 100
 }
 
+//nolint
 func TestInvokeMethod(t *testing.T) {
 	book := Book{name: "Test"}
 	ctx := context.TODO()
@@ -151,7 +152,7 @@ func BenchmarkInvokeMethod(b *testing.B) {
 
 	book := Book{name: "Test"}
 	for i := 0; i < b.N; i++ {
-		InvokeMethod(context.TODO(), book, "FullName")
+		_, _ = InvokeMethod(context.TODO(), book, "FullName")
 	}
 }
 

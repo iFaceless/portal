@@ -2,7 +2,6 @@ package portal
 
 import (
 	"context"
-	"fmt"
 	"reflect"
 	"sync"
 )
@@ -12,7 +11,7 @@ var (
 )
 
 type Chell struct {
-	schema interface{}
+	schema interface{} //nolint
 
 	onlyFieldNames     []string
 	excludedFieldNames []string
@@ -61,6 +60,7 @@ func (c *Chell) dumpSyncFields(ctx context.Context, src interface{}, dest *Schem
 func (c *Chell) dumpAsyncFields(ctx context.Context, src interface{}, dest *Schema) error {
 	logger.Debugln("[portal.chell] dump async fields")
 	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
 	type Item struct {
 		field *Field
 		data  interface{}
@@ -74,9 +74,9 @@ func (c *Chell) dumpAsyncFields(ctx context.Context, src interface{}, dest *Sche
 		wg.Add(1)
 		go func(f *Field) {
 			defer wg.Done()
-			logger.Debugf("[portal.chell] processing sync field '%s'", field)
+			logger.Debugf("[portal.chell] processing sync field '%s'", f)
 			val, err := dest.FieldValueFromData(ctx, f, src)
-			logger.Debugf("[portal.chell] sync field '%s' got value '%v'", field, val)
+			logger.Debugf("[portal.chell] sync field '%s' got value '%v'", f, val)
 			items <- &Item{f, val, err}
 		}(field)
 	}
@@ -103,12 +103,6 @@ func (c *Chell) dumpAsyncFields(ctx context.Context, src interface{}, dest *Sche
 }
 
 func (c *Chell) dumpField(ctx context.Context, src interface{}, field *Field) error {
-	defer func() {
-		if err := recover(); err != nil {
-			err = fmt.Sprintf("failed to dump field %s, src is %v: %s", field, src, err)
-		}
-	}()
-
 	if IsNil(src) {
 		logger.Warnf("[portal.chell] cannot get value for field %s, current input value is %v", field, src)
 		return nil
@@ -129,8 +123,6 @@ func (c *Chell) dumpField(ctx context.Context, src interface{}, field *Field) er
 			return c.dumpFieldNestedOne(ctx, src, field)
 		}
 	}
-
-	return nil
 }
 
 func (c *Chell) dumpFieldNestedOne(ctx context.Context, src interface{}, field *Field) error {
@@ -145,14 +137,12 @@ func (c *Chell) dumpFieldNestedOne(ctx context.Context, src interface{}, field *
 	}
 	switch field.Kind() {
 	case reflect.Ptr:
-		field.SetValue(val.Interface())
+		return field.SetValue(val.Interface())
 	case reflect.Struct:
-		field.SetValue(val.Elem().Interface())
+		return field.SetValue(val.Elem().Interface())
 	default:
 		panic("invalid nested schema")
 	}
-
-	return nil
 }
 
 func (c *Chell) dumpFieldNestedMany(ctx context.Context, src interface{}, field *Field) error {
