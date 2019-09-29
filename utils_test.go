@@ -72,8 +72,8 @@ func TestAreIdenticalType(t *testing.T) {
 
 	foo1 := &Foo{}
 	foo2 := &Foo{}
-	asserter.True(AreIdenticalType(foo1, foo2))
-	asserter.False(AreIdenticalType(foo1, Foo{}))
+	asserter.True(Convertible(foo1, foo2))
+	asserter.False(Convertible(foo1, Foo{}))
 }
 
 func TestIsNil(t *testing.T) {

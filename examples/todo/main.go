@@ -3,7 +3,6 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"regexp"
 
 	"github.com/ifaceless/portal"
 
@@ -12,10 +11,6 @@ import (
 )
 
 func main() {
-	pattern, _ := regexp.Compile(`(\w+)`)
-	matches := pattern.FindAllString("User[ID,Name]", -1)
-	fmt.Println(matches)
-
 	portal.SetDebug(true)
 	task := model.TaskModel{
 		ID:     1,

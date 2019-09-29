@@ -16,8 +16,11 @@ var (
 type Chell struct {
 	schema interface{} //nolint
 
-	onlyFieldNames     []string
-	excludedFieldNames []string
+	onlyFieldNames   []string
+	onlyFieldFilters map[string]*FilterNode
+
+	excludedFieldNames  []string
+	excludeFieldFilters map[string]*FilterNode
 }
 
 func New() *Chell {
@@ -137,7 +140,7 @@ func (c *Chell) dumpField(ctx context.Context, field *Field, value interface{}) 
 		return nil
 	}
 
-	if AreIdenticalType(value, field.Field.Value()) {
+	if Convertible(value, field.Field.Value()) {
 		return field.SetValue(value)
 	}
 	if !field.IsNested() {
@@ -267,12 +270,14 @@ func (c *Chell) dumpMany(ctx context.Context, dst, src interface{}) error {
 func (c *Chell) Only(fields ...string) *Chell {
 	cpy := c.clone()
 	cpy.onlyFieldNames = fields
+	cpy.onlyFieldFilters = ParseFilters(fields)
 	return cpy
 }
 
 func (c *Chell) Exclude(fields ...string) *Chell {
 	cpy := c.clone()
 	cpy.excludedFieldNames = fields
+	cpy.excludeFieldFilters = ParseFilters(fields)
 	return cpy
 }
 

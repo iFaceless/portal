@@ -145,6 +145,6 @@ func IsNil(in interface{}) bool {
 	}
 }
 
-func AreIdenticalType(m, n interface{}) bool {
-	return reflect.TypeOf(m).ConvertibleTo(reflect.TypeOf(n))
+func Convertible(from, to interface{}) bool {
+	return reflect.TypeOf(from).ConvertibleTo(reflect.TypeOf(to))
 }
