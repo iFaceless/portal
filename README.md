@@ -69,30 +69,37 @@ func (ts *TaskSchema) GetDescription(model *model.TaskModel) string {
 ## Serialization examples
 
 ```go
-ctx := context.Background()
-chell := portal.New()
+package main
 
-// write to a specified task schema.
-var taskSchema schema.TaskSchema
-chell.Dump(ctx, &task, &taskSchema)
-// {"id":"4096","title":"Finish your jobs.","description":"Custom description","user":{"id":"1024","name":"user:1024"}}
-data, _ := json.Marshal(taskSchema)
+import (
+	"encoding/json"
+	"github.com/ifaceless/portal"
+)
 
-// select specified fields
-chell.Only("Title").Dump(ctx, &task, &taskSchema)
-// {"title":"Finish your jobs."}
-data, _ := json.Marshal(taskSchema)
+func main()  {
+    // write to a specified task schema.
+    var taskSchema schema.TaskSchema
+    portal.Dump(&taskSchema, &taskModel)
+    // data: {"id":"4096","title":"Finish your jobs.","description":"Custom description","user":{"id":"1024","name":"user:1024"}}
+    data, _ := json.Marshal(taskSchema)
+ 
+    // select specified fields
+    portal.Dump(&taskSchema, &taskModel, portal.Only("Title"))
+    // data: {"title":"Finish your jobs."}
+    data, _ := json.Marshal(taskSchema)
+ 
+    // ignore specified fields
+    portal.Dump(&taskSchema, &taskModel, portal.Exclude("ID", "Description"))
+    // data: {"title":"Finish your jobs.","user":{"id":"1024","name":"user:1024"}}
+    data, _ := json.Marshal(taskSchema)
+ 
+    // write to a slice of task schema
+    var taskSchemas []schema.TaskSchema
+    portal.Dump(&taskSchemas, &taskModels, portal.Only("ID", "Title"))
+    // data: [{"id":"0","title":"Task #1"},{"id":"1","title":"Task #2"}]
+    data, _ := json.Marshal(taskSchema)
+}
 
-// ignore specified fields
-chell.Exclude("ID", "Description").Dump(ctx, &task, &taskSchema)
-// {"title":"Finish your jobs.","user":{"id":"1024","name":"user:1024"}}
-data, _ := json.Marshal(taskSchema)
-
-// write to a slice of task schema
-var taskSchemas []schema.TaskSchema
-chell.Only("ID", "Title").DumpMany(context.Background(), tasks, &taskSchemas)
-// [{"title":"Task #1"},{"id":"1","title":"Task #2"}]
-data, _ := json.Marshal(taskSchema)
 ```
 
 # License

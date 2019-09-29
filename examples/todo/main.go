@@ -60,7 +60,7 @@ func printMany() {
 		})
 	}
 
-	err := portal.Dump(&taskSchemas, tasks, portal.Only("ID", "Title"))
+	err := portal.Dump(&taskSchemas, &tasks, portal.Only("ID", "Title"))
 	if err != nil {
 		panic(err)
 	}

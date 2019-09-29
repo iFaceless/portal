@@ -198,13 +198,17 @@ func (c *Chell) dumpFieldNestedMany(ctx context.Context, field *Field, src inter
 }
 
 func (c *Chell) dumpMany(ctx context.Context, dst, src interface{}) error {
-	reflectedData := reflect.ValueOf(src)
-	if reflectedData.Kind() != reflect.Slice {
+	rv := reflect.ValueOf(src)
+	if rv.Kind() == reflect.Ptr {
+		rv = reflect.Indirect(rv)
+	}
+
+	if rv.Kind() != reflect.Slice {
 		panic("input src must be a slice")
 	}
 
 	schemaSlice := reflect.Indirect(reflect.ValueOf(dst))
-	schemaSlice.Set(reflect.MakeSlice(schemaSlice.Type(), reflectedData.Len(), reflectedData.Cap()))
+	schemaSlice.Set(reflect.MakeSlice(schemaSlice.Type(), rv.Len(), rv.Cap()))
 
 	schemaType := IndirectStructTypeP(schemaSlice.Type())
 
@@ -216,9 +220,9 @@ func (c *Chell) dumpMany(ctx context.Context, dst, src interface{}) error {
 		err       error
 	}
 
-	items := make(chan *Item, MinInt(reflectedData.Len(), ConcurrentDumpingPoolSize))
+	items := make(chan *Item, MinInt(rv.Len(), ConcurrentDumpingPoolSize))
 
-	for i := 0; i < reflectedData.Len(); i++ {
+	for i := 0; i < rv.Len(); i++ {
 		wg.Add(1)
 		go func(index int) {
 			defer wg.Done()
@@ -227,7 +231,7 @@ func (c *Chell) dumpMany(ctx context.Context, dst, src interface{}) error {
 			toSchema := NewSchema(schemaPtr.Interface())
 			toSchema.SetOnlyFields(c.onlyFieldNames...)
 			toSchema.SetExcludeFields(c.excludedFieldNames...)
-			val := reflectedData.Index(index).Interface()
+			val := rv.Index(index).Interface()
 			err := c.dump(ctx, toSchema, val)
 			items <- &Item{
 				index:     index,
