@@ -11,18 +11,19 @@ import (
 )
 
 func main() {
-	_ = model.TaskModel{
-		ID:     4096,
-		UserID: 1024,
+	portal.SetDebug(false)
+	task := model.TaskModel{
+		ID:     1,
+		UserID: 1,
 		Title:  "Finish your jobs.",
 	}
 
-	// {"id":"4096","title":"Finish your jobs.","description":"Custom description","user":{"id":"1024","name":"user:1024"}}
-	//printFullFields(&task)
-	// {"title":"Finish your jobs.","user":{"id":"1024","name":"user:1024"}}
-	//printOnlyFields(&task, "User", "Title")
+	// {"id":"1","title":"Finish your jobs.","description":"Custom description","user":{"id":"1","name":"user:1"}}
+	printFullFields(&task)
+	// {"title":"Finish your jobs.","user":{"id":"1","name":"user:1"}}
+	printOnlyFields(&task, "ID", "Title")
 	// {"title":"Finish your jobs."}
-	//printOnlyFields(&task, "Title")
+	printOnlyFields(&task, "Title")
 
 	printMany()
 }
@@ -51,7 +52,7 @@ func printMany() {
 	var taskSchemas []schema.TaskSchema
 
 	tasks := make([]*model.TaskModel, 0)
-	for i := 0; i < 1; i++ {
+	for i := 0; i < 2; i++ {
 		tasks = append(tasks, &model.TaskModel{
 			ID:     i,
 			UserID: i + 100,
@@ -59,7 +60,7 @@ func printMany() {
 		})
 	}
 
-	err := portal.New().Only("ID").Dump(&taskSchemas, tasks)
+	err := portal.New().Only("ID", "Title").Dump(&taskSchemas, tasks)
 	if err != nil {
 		panic(err)
 	}

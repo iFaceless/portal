@@ -16,11 +16,7 @@ import (
 // - from is pointer type，to is value type
 // - from is value type, to is value type
 // - from and to are all pointer type
-func Convert(from interface{}, to interface{}) (out interface{}, err error) {
-	if isEmptyValue(from) {
-		return nil, fmt.Errorf("empty input value: %s", from)
-	}
-
+func Convert(to, from interface{}) (out interface{}, err error) {
 	v := from
 	iv := reflect.ValueOf(from)
 	if iv.Type().Kind() == reflect.Ptr {
@@ -129,39 +125,18 @@ func Convert(from interface{}, to interface{}) (out interface{}, err error) {
 	case *[]time.Duration:
 		out, err = toDurationSlicePtrE(v)
 	default:
-		return convertUsingReflect(to, from)
+		return convertWithReflect(to, from)
 	}
 
 	// die trying...
 	if err != nil {
-		out, err = convertUsingReflect(to, from)
+		out, err = convertWithReflect(to, from)
 	}
 
 	return
 }
 
-func isEmptyValue(in interface{}) bool {
-	v := reflect.ValueOf(in)
-	switch v.Kind() {
-	case reflect.Array, reflect.Map, reflect.Slice, reflect.String:
-		return v.Len() == 0
-	case reflect.Bool:
-		return !v.Bool()
-	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
-		return v.Int() == 0
-	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64, reflect.Uintptr:
-		return v.Uint() == 0
-	case reflect.Float32, reflect.Float64:
-		return v.Float() == 0
-	case reflect.Interface, reflect.Ptr:
-		return v.IsNil()
-	}
-
-	value := reflect.ValueOf(in)
-	return reflect.DeepEqual(value.Interface(), reflect.Zero(value.Type()).Interface())
-}
-
-func convertUsingReflect(to interface{}, from interface{}) (interface{}, error) {
+func convertWithReflect(to interface{}, from interface{}) (interface{}, error) {
 	expectedType := reflect.TypeOf(to)
 	value := reflect.ValueOf(from)
 	if value.Type().ConvertibleTo(expectedType) {

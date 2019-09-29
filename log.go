@@ -5,3 +5,11 @@ import (
 )
 
 var logger = logrus.New()
+
+func SetDebug(v bool) {
+	if v {
+		logger.SetLevel(logrus.DebugLevel)
+	} else {
+		logger.SetLevel(logrus.InfoLevel)
+	}
+}

@@ -124,25 +124,25 @@ func (c *Chell) dumpAsyncFields(ctx context.Context, dst *Schema, src interface{
 	return nil
 }
 
-func (c *Chell) dumpField(ctx context.Context, field *Field, src interface{}) error {
-	if IsNil(src) {
-		logger.Warnf("[portal.chell] cannot get value for field %s, current input value is %v", field, src)
+func (c *Chell) dumpField(ctx context.Context, field *Field, value interface{}) error {
+	if IsNil(value) {
+		logger.Warnf("[portal.chell] cannot get value for field %s, current input value is %v", field, value)
 		return nil
 	}
 
-	if AreIdenticalType(src, field.Field.Value()) {
-		return field.SetValue(src)
+	if AreIdenticalType(value, field.Field.Value()) {
+		return field.SetValue(value)
 	}
 	if !field.IsNested() {
-		logger.Debugf("[portal.chell] dump normal field %s with value %v", field, src)
-		return field.SetValue(src)
+		logger.Debugf("[portal.chell] dump normal field %s with value %v", field, value)
+		return field.SetValue(value)
 	} else {
 		if field.Many() {
-			logger.Debugf("[portal.chell] dump nested slice field %s with value %v", field, src)
-			return c.dumpFieldNestedMany(ctx, field, src)
+			logger.Debugf("[portal.chell] dump nested slice field %s with value %v", field, value)
+			return c.dumpFieldNestedMany(ctx, field, value)
 		} else {
-			logger.Debugf("[portal.chell] dump nested field %s with value %v", field, src)
-			return c.dumpFieldNestedOne(ctx, field, src)
+			logger.Debugf("[portal.chell] dump nested field %s with value %v", field, value)
+			return c.dumpFieldNestedOne(ctx, field, value)
 		}
 	}
 }

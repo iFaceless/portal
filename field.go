@@ -40,7 +40,7 @@ func (f *Field) SetValue(v interface{}) error {
 		return err
 	}
 
-	convertedValue, err := Convert(realValue, f.Value())
+	convertedValue, err := Convert(f.Value(), realValue)
 	if err != nil {
 		return f.setIndirectly(realValue)
 	} else {
