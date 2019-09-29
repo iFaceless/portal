@@ -10,7 +10,6 @@ import (
 
 var (
 	ConcurrentDumpingPoolSize = 10
-	fieldFilterPattern, _     = regexp.Compile(`(\w+)`)
 )
 
 type Chell struct {
