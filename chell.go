@@ -2,6 +2,7 @@ package portal
 
 import (
 	"context"
+	"errors"
 	"reflect"
 	"sync"
 )
@@ -25,30 +26,51 @@ func New() *Chell {
 	return chell
 }
 
-func (c *Chell) Dump(ctx context.Context, src interface{}, dest interface{}) error {
-	toSchema := NewSchema(dest)
-	toSchema.SetOnlyFields(c.onlyFieldNames...)
-	toSchema.SetExcludeFields(c.excludedFieldNames...)
-	return c.dump(ctx, src, toSchema)
+func Dump(dst interface{}, src interface{}) error {
+	return New().Dump(dst, src)
 }
 
-func (c *Chell) dump(ctx context.Context, src interface{}, dest *Schema) error {
-	if err := c.dumpSyncFields(ctx, src, dest); err != nil {
+func DumpWithContext(ctx context.Context, dst interface{}, src interface{}) error {
+	return New().DumpWithContext(ctx, dst, src)
+}
+
+func (c *Chell) Dump(dst, src interface{}) error {
+	return c.DumpWithContext(context.TODO(), dst, src)
+}
+
+func (c *Chell) DumpWithContext(ctx context.Context, dst, src interface{}) error {
+	rv := reflect.ValueOf(dst)
+	if rv.Kind() != reflect.Ptr {
+		return errors.New("dst must be a pointer")
+	}
+
+	if reflect.Indirect(rv).Kind() == reflect.Slice {
+		return c.dumpMany(ctx, dst, src)
+	} else {
+		toSchema := NewSchema(dst)
+		toSchema.SetOnlyFields(c.onlyFieldNames...)
+		toSchema.SetExcludeFields(c.excludedFieldNames...)
+		return c.dump(ctx, toSchema, src)
+	}
+}
+
+func (c *Chell) dump(ctx context.Context, dst *Schema, src interface{}) error {
+	if err := c.dumpSyncFields(ctx, dst, src); err != nil {
 		return err
 	}
-	return c.dumpAsyncFields(ctx, src, dest)
+	return c.dumpAsyncFields(ctx, dst, src)
 }
 
-func (c *Chell) dumpSyncFields(ctx context.Context, src interface{}, dest *Schema) error {
+func (c *Chell) dumpSyncFields(ctx context.Context, dst *Schema, src interface{}) error {
 	logger.Debugln("[portal.chell] dump sync fields")
-	for _, field := range dest.SyncFields() {
+	for _, field := range dst.SyncFields() {
 		logger.Debugf("[portal.chell] processing sync field '%s'", field)
-		val, err := dest.FieldValueFromData(ctx, field, src)
+		val, err := dst.FieldValueFromData(ctx, field, src)
 		if err != nil {
 			return err
 		}
 		logger.Debugf("[portal.chell] sync field '%s' got value '%v'", field, val)
-		err = c.dumpField(ctx, val, field)
+		err = c.dumpField(ctx, field, val)
 		if err != nil {
 			return err
 		}
@@ -57,7 +79,7 @@ func (c *Chell) dumpSyncFields(ctx context.Context, src interface{}, dest *Schem
 	return nil
 }
 
-func (c *Chell) dumpAsyncFields(ctx context.Context, src interface{}, dest *Schema) error {
+func (c *Chell) dumpAsyncFields(ctx context.Context, dst *Schema, src interface{}) error {
 	logger.Debugln("[portal.chell] dump async fields")
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
@@ -68,14 +90,14 @@ func (c *Chell) dumpAsyncFields(ctx context.Context, src interface{}, dest *Sche
 	}
 
 	var wg sync.WaitGroup
-	items := make(chan *Item, MinInt(len(dest.AsyncFields()), ConcurrentDumpingPoolSize))
+	items := make(chan *Item, MinInt(len(dst.AsyncFields()), ConcurrentDumpingPoolSize))
 
-	for _, field := range dest.AsyncFields() {
+	for _, field := range dst.AsyncFields() {
 		wg.Add(1)
 		go func(f *Field) {
 			defer wg.Done()
 			logger.Debugf("[portal.chell] processing sync field '%s'", f)
-			val, err := dest.FieldValueFromData(ctx, f, src)
+			val, err := dst.FieldValueFromData(ctx, f, src)
 			logger.Debugf("[portal.chell] sync field '%s' got value '%v'", f, val)
 			items <- &Item{f, val, err}
 		}(field)
@@ -92,7 +114,7 @@ func (c *Chell) dumpAsyncFields(ctx context.Context, src interface{}, dest *Sche
 			return item.err
 		}
 
-		err := c.dumpField(ctx, item.data, item.field)
+		err := c.dumpField(ctx, item.field, item.data)
 		if err != nil {
 			cancel()
 			return err
@@ -102,7 +124,7 @@ func (c *Chell) dumpAsyncFields(ctx context.Context, src interface{}, dest *Sche
 	return nil
 }
 
-func (c *Chell) dumpField(ctx context.Context, src interface{}, field *Field) error {
+func (c *Chell) dumpField(ctx context.Context, field *Field, src interface{}) error {
 	if IsNil(src) {
 		logger.Warnf("[portal.chell] cannot get value for field %s, current input value is %v", field, src)
 		return nil
@@ -117,21 +139,21 @@ func (c *Chell) dumpField(ctx context.Context, src interface{}, field *Field) er
 	} else {
 		if field.Many() {
 			logger.Debugf("[portal.chell] dump nested slice field %s with value %v", field, src)
-			return c.dumpFieldNestedMany(ctx, src, field)
+			return c.dumpFieldNestedMany(ctx, field, src)
 		} else {
 			logger.Debugf("[portal.chell] dump nested field %s with value %v", field, src)
-			return c.dumpFieldNestedOne(ctx, src, field)
+			return c.dumpFieldNestedOne(ctx, field, src)
 		}
 	}
 }
 
-func (c *Chell) dumpFieldNestedOne(ctx context.Context, src interface{}, field *Field) error {
+func (c *Chell) dumpFieldNestedOne(ctx context.Context, field *Field, src interface{}) error {
 	val := reflect.New(IndirectStructTypeP(reflect.TypeOf(field.Value())))
 	toNestedSchema := NewSchema(val.Interface())
 	toNestedSchema.SetOnlyFields(field.NestedOnlyNames()...)
 	toNestedSchema.SetExcludeFields(field.NestedExcludeNames()...)
 
-	err := c.dump(ctx, src, toNestedSchema)
+	err := c.dump(ctx, toNestedSchema, src)
 	if err != nil {
 		return err
 	}
@@ -145,12 +167,12 @@ func (c *Chell) dumpFieldNestedOne(ctx context.Context, src interface{}, field *
 	}
 }
 
-func (c *Chell) dumpFieldNestedMany(ctx context.Context, src interface{}, field *Field) error {
+func (c *Chell) dumpFieldNestedMany(ctx context.Context, field *Field, src interface{}) error {
 	typ := reflect.TypeOf(field.Value())
 	nestedSchemaSlice := reflect.New(typ)
 
 	cpy := c.Only(field.NestedOnlyNames()...).Exclude(field.NestedExcludeNames()...)
-	err := cpy.DumpMany(ctx, src, nestedSchemaSlice.Interface())
+	err := cpy.dumpMany(ctx, nestedSchemaSlice.Interface(), src)
 	if err != nil {
 		return err
 	}
@@ -170,24 +192,13 @@ func (c *Chell) dumpFieldNestedMany(ctx context.Context, src interface{}, field 
 	return nil
 }
 
-func (c *Chell) MustDump(ctx context.Context, src interface{}, dump interface{}) {
-	err := c.Dump(ctx, src, dump)
-	if err != nil {
-		panic(err)
-	}
-}
-
-func (c *Chell) DumpMany(ctx context.Context, src interface{}, dest interface{}) error {
-	return c.dumpMany(ctx, src, dest)
-}
-
-func (c *Chell) dumpMany(ctx context.Context, src interface{}, dest interface{}) error {
+func (c *Chell) dumpMany(ctx context.Context, dst, src interface{}) error {
 	reflectedData := reflect.ValueOf(src)
 	if reflectedData.Kind() != reflect.Slice {
 		panic("input src must be a slice")
 	}
 
-	schemaSlice := reflect.Indirect(reflect.ValueOf(dest))
+	schemaSlice := reflect.Indirect(reflect.ValueOf(dst))
 	schemaSlice.Set(reflect.MakeSlice(schemaSlice.Type(), reflectedData.Len(), reflectedData.Cap()))
 
 	schemaType := IndirectStructTypeP(schemaSlice.Type())
@@ -212,7 +223,7 @@ func (c *Chell) dumpMany(ctx context.Context, src interface{}, dest interface{})
 			toSchema.SetOnlyFields(c.onlyFieldNames...)
 			toSchema.SetExcludeFields(c.excludedFieldNames...)
 			val := reflectedData.Index(index).Interface()
-			err := c.dump(ctx, val, toSchema)
+			err := c.dump(ctx, toSchema, val)
 			items <- &Item{
 				index:     index,
 				schemaPtr: schemaPtr,
@@ -240,13 +251,6 @@ func (c *Chell) dumpMany(ctx context.Context, src interface{}, dest interface{})
 		}
 	}
 	return nil
-}
-
-func (c *Chell) MustDumpMany(ctx context.Context, src interface{}, dest interface{}) {
-	err := c.DumpMany(ctx, src, dest)
-	if err != nil {
-		panic(err)
-	}
 }
 
 func (c *Chell) Only(fields ...string) *Chell {
