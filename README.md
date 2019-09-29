@@ -1,4 +1,6 @@
-# What's portal
+[![Coverage Status](https://coveralls.io/repos/github/iFaceless/portal/badge.svg?branch=master)](https://coveralls.io/github/iFaceless/portal?branch=master)
+
+# What's portal?
 ![portal game](https://s2.ax1x.com/2019/09/28/u1TnEt.jpg)
 
 It's a lightweight package which simplifies Go object serialization. Inspired heavily by [marshmallow](https://github.com/marshmallow-code/marshmallow), but with concurrency builtin for better performance.
