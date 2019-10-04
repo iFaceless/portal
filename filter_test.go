@@ -7,24 +7,15 @@ import (
 )
 
 func TestParseFilterString(t *testing.T) {
-	asserter := assert.New(t)
 
-	asserter.Nil(ParseFilterString(""))
-	asserter.Equal(&FilterNode{
-		Key: "User",
-	}, ParseFilterString("User"))
-	asserter.Equal(&FilterNode{
-		Key:   "User",
-		Value: []string{"ID", "Name", "Age"},
-	}, ParseFilterString("User[ID,Name,Age]"))
-	asserter.Equal(&FilterNode{
-		Key:   "User",
-		Value: []string{"ID", "Name"},
-		Children: []*FilterNode{
-			{
-				Key:   "School",
-				Value: []string{"Name"},
-			},
-		},
-	}, ParseFilterString("User[ID,Name,School[Name]]"))
+}
+
+func Test_checkBracketPair(t *testing.T) {
+	asserter := assert.New(t)
+	asserter.Nil(checkBracketPairs([]byte("speaker")))
+	asserter.Nil(checkBracketPairs([]byte("speaker[]")))
+	asserter.Nil(checkBracketPairs([]byte("speaker[name,age[user[id]]]")))
+	asserter.Equal(ErrUnmatchedBrackets, checkBracketPairs([]byte("speaker[")))
+	asserter.Equal(ErrUnmatchedBrackets, checkBracketPairs([]byte("speaker]")))
+	asserter.Equal(ErrUnmatchedBrackets, checkBracketPairs([]byte("speaker[user[id]]]")))
 }

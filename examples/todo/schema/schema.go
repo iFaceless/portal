@@ -2,9 +2,16 @@ package schema
 
 import "github.com/ifaceless/portal/examples/todo/model"
 
+type NotiSchema struct {
+	ID      string `json:"id,omitempty"`
+	Title   string `json:"title,omitempty"`
+	Content string `json:"content,omitempty"`
+}
+
 type UserSchema struct {
-	ID   string `json:"id,omitempty"`
-	Name string `json:"name,omitempty" portal:"attr:Fullname"`
+	ID            string        `json:"id,omitempty"`
+	Name          string        `json:"name,omitempty" portal:"attr:Fullname"`
+	Notifications []*NotiSchema `json:"notifications,omitempty" portal:"nested"`
 }
 
 type TaskSchema struct {

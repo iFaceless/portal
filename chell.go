@@ -2,9 +2,10 @@ package portal
 
 import (
 	"context"
-	"errors"
 	"reflect"
 	"sync"
+
+	"github.com/pkg/errors"
 )
 
 var (
@@ -12,21 +13,14 @@ var (
 )
 
 type Chell struct {
-	schema interface{} //nolint
+	err error
 
-	onlyFieldNames   []string
-	onlyFieldFilters map[string]*FilterNode
-
-	excludedFieldNames  []string
-	excludeFieldFilters map[string]*FilterNode
+	onlyFieldFilters    map[int][]*FilterNode
+	excludeFieldFilters map[int][]*FilterNode
 }
 
 func New() *Chell {
-	chell := &Chell{
-		onlyFieldNames:     make([]string, 0),
-		excludedFieldNames: make([]string, 0),
-	}
-	return chell
+	return &Chell{}
 }
 
 func Dump(dst, src interface{}, opts ...Option) error {
@@ -47,6 +41,10 @@ func (c *Chell) Dump(dst, src interface{}) error {
 }
 
 func (c *Chell) DumpWithContext(ctx context.Context, dst, src interface{}) error {
+	if c.err != nil {
+		return errors.WithStack(c.err)
+	}
+
 	rv := reflect.ValueOf(dst)
 	if rv.Kind() != reflect.Ptr {
 		return errors.New("dst must be a pointer")
@@ -56,9 +54,9 @@ func (c *Chell) DumpWithContext(ctx context.Context, dst, src interface{}) error
 		return c.dumpMany(ctx, dst, src)
 	} else {
 		toSchema := NewSchema(dst)
-		toSchema.SetOnlyFields(c.onlyFieldNames...)
-		toSchema.SetExcludeFields(c.excludedFieldNames...)
-		return c.dump(ctx, toSchema, src)
+		toSchema.SetOnlyFields(ExtractFilterNodeNames(c.onlyFieldFilters[0], false)...)
+		toSchema.SetExcludeFields(ExtractFilterNodeNames(c.excludeFieldFilters[0], true)...)
+		return c.dump(IncrDumpDepthContext(ctx), toSchema, src)
 	}
 }
 
@@ -158,10 +156,23 @@ func (c *Chell) dumpField(ctx context.Context, field *Field, value interface{}) 
 func (c *Chell) dumpFieldNestedOne(ctx context.Context, field *Field, src interface{}) error {
 	val := reflect.New(IndirectStructTypeP(reflect.TypeOf(field.Value())))
 	toNestedSchema := NewSchema(val.Interface())
-	toNestedSchema.SetOnlyFields(field.NestedOnlyNames()...)
-	toNestedSchema.SetExcludeFields(field.NestedExcludeNames()...)
 
-	err := c.dump(ctx, toNestedSchema, src)
+	depth := DumpDepthFromContext(ctx)
+	nestedOnlyNames := ExtractFilterNodeNames(c.onlyFieldFilters[depth], false)
+	if len(nestedOnlyNames) > 0 {
+		toNestedSchema.SetOnlyFields(nestedOnlyNames...)
+	} else {
+		toNestedSchema.SetOnlyFields(field.NestedOnlyNames()...)
+	}
+
+	nestedExcludeNames := ExtractFilterNodeNames(c.excludeFieldFilters[depth], true)
+	if len(nestedExcludeNames) > 0 {
+		toNestedSchema.SetExcludeFields(nestedExcludeNames...)
+	} else {
+		toNestedSchema.SetExcludeFields(field.NestedExcludeNames()...)
+	}
+
+	err := c.dump(IncrDumpDepthContext(ctx), toNestedSchema, src)
 	if err != nil {
 		return err
 	}
@@ -178,9 +189,7 @@ func (c *Chell) dumpFieldNestedOne(ctx context.Context, field *Field, src interf
 func (c *Chell) dumpFieldNestedMany(ctx context.Context, field *Field, src interface{}) error {
 	typ := reflect.TypeOf(field.Value())
 	nestedSchemaSlice := reflect.New(typ)
-
-	cpy := c.Only(field.NestedOnlyNames()...).Exclude(field.NestedExcludeNames()...)
-	err := cpy.dumpMany(ctx, nestedSchemaSlice.Interface(), src)
+	err := c.dumpMany(ctx, nestedSchemaSlice.Interface(), src)
 	if err != nil {
 		return err
 	}
@@ -232,10 +241,11 @@ func (c *Chell) dumpMany(ctx context.Context, dst, src interface{}) error {
 
 			schemaPtr := reflect.New(schemaType)
 			toSchema := NewSchema(schemaPtr.Interface())
-			toSchema.SetOnlyFields(c.onlyFieldNames...)
-			toSchema.SetExcludeFields(c.excludedFieldNames...)
+			depth := DumpDepthFromContext(ctx)
+			toSchema.SetOnlyFields(ExtractFilterNodeNames(c.onlyFieldFilters[depth], false)...)
+			toSchema.SetExcludeFields(ExtractFilterNodeNames(c.excludeFieldFilters[depth], true)...)
 			val := rv.Index(index).Interface()
-			err := c.dump(ctx, toSchema, val)
+			err := c.dump(IncrDumpDepthContext(ctx), toSchema, val)
 			items <- &Item{
 				index:     index,
 				schemaPtr: schemaPtr,
@@ -267,22 +277,29 @@ func (c *Chell) dumpMany(ctx context.Context, dst, src interface{}) error {
 
 func (c *Chell) Only(fields ...string) *Chell {
 	cpy := c.clone()
-	cpy.onlyFieldNames = fields
-	cpy.onlyFieldFilters = ParseFilters(fields)
+	filters, err := ParseFilters(fields)
+	if err != nil {
+		cpy.err = err
+	} else {
+		cpy.onlyFieldFilters = filters
+	}
 	return cpy
 }
 
 func (c *Chell) Exclude(fields ...string) *Chell {
 	cpy := c.clone()
-	cpy.excludedFieldNames = fields
-	cpy.excludeFieldFilters = ParseFilters(fields)
+	filters, err := ParseFilters(fields)
+	if err != nil {
+		cpy.err = err
+	} else {
+		cpy.onlyFieldFilters = filters
+	}
 	return cpy
 }
 
 func (c *Chell) clone() *Chell {
-	cpy := &Chell{
-		onlyFieldNames:     c.onlyFieldNames,
-		excludedFieldNames: c.excludedFieldNames,
+	return &Chell{
+		onlyFieldFilters:    c.onlyFieldFilters,
+		excludeFieldFilters: c.excludeFieldFilters,
 	}
-	return cpy
 }

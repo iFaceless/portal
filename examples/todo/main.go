@@ -19,13 +19,14 @@ func main() {
 	}
 
 	// {"id":"1","title":"Finish your jobs.","description":"Custom description","user":{"id":"1","name":"user:1"}}
-	printFullFields(&task)
+	//printFullFields(&task)
 	// {"title":"Finish your jobs.","user":{"id":"1","name":"user:1"}}
-	printOnlyFields(&task, "ID", "Title")
+	//printWithOnlyFields(&task, "ID", "User[ID,Notifications[ID]]")
 	// {"title":"Finish your jobs."}
-	printOnlyFields(&task, "User", "SimpleUser")
-
-	printMany()
+	//printWithOnlyFields(&task, "User", "SimpleUser")
+	//
+	//printMany()
+	printWithExcludeFields(&task, "ID", "User[Name]")
 }
 
 func printFullFields(task *model.TaskModel) {
@@ -38,9 +39,19 @@ func printFullFields(task *model.TaskModel) {
 	fmt.Println(string(data))
 }
 
-func printOnlyFields(task *model.TaskModel, only ...string) {
+func printWithOnlyFields(task *model.TaskModel, fields ...string) {
 	var taskSchema schema.TaskSchema
-	err := portal.Dump(&taskSchema, task, portal.Only(only...))
+	err := portal.Dump(&taskSchema, task, portal.Only(fields...))
+	if err != nil {
+		panic(err)
+	}
+	data, _ := json.Marshal(taskSchema)
+	fmt.Println(string(data))
+}
+
+func printWithExcludeFields(task *model.TaskModel, fields ...string) {
+	var taskSchema schema.TaskSchema
+	err := portal.Dump(&taskSchema, task, portal.Exclude(fields...))
 	if err != nil {
 		panic(err)
 	}
