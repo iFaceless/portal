@@ -16,7 +16,7 @@ func DumpDepthFromContext(ctx context.Context) int {
 	val := ctx.Value(dumpDepthCtxKey)
 	depth, ok := val.(int)
 	if !ok {
-		// depth starts with 0
+		// depth starts from 0
 		return 0
 	}
 	return depth
