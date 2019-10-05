@@ -3,6 +3,7 @@ package schema
 import "github.com/ifaceless/portal/examples/todo/model"
 
 type NotiSchema struct {
+	Type    string `json:"type" portal:"const:vip"`
 	ID      string `json:"id,omitempty"`
 	Title   string `json:"title,omitempty"`
 	Content string `json:"content,omitempty"`
