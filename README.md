@@ -158,6 +158,8 @@ func main()  {
 
 ```
 
+To learn more about [portal](https://github.com/iFaceless/portal), please read the [User Guide](./USERGUIDE.md)~ 
+
 # License
 
 [portal](https://github.com/iFaceless/portal) is licensed under the [MIT license](./LICENSE). Please feel free and have fun~
