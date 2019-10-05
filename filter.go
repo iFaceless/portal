@@ -15,7 +15,7 @@ var (
 
 var (
 	cachedParseResultMap = make(map[string]map[int][]*FilterNode)
-	lock                 sync.RWMutex
+	lock                 sync.Mutex
 )
 
 type FilterNode struct {
@@ -76,13 +76,10 @@ func ParseFilterString(s string) (map[int][]*FilterNode, error) {
 		return nil, ErrPrefixIsNotBracket
 	}
 
-	lock.RLock()
 	cachedResult, ok := cachedParseResultMap[s]
 	if ok {
-		lock.RUnlock()
 		return cachedResult, nil
 	}
-	lock.RUnlock()
 
 	lock.Lock()
 	// don't care about non-ascii chars.
