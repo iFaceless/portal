@@ -9,9 +9,10 @@ type NotiSchema struct {
 }
 
 type UserSchema struct {
-	ID            string        `json:"id,omitempty"`
-	Name          string        `json:"name,omitempty" portal:"attr:Fullname"`
-	Notifications []*NotiSchema `json:"notifications,omitempty" portal:"nested"`
+	ID                   string        `json:"id,omitempty"`
+	Name                 string        `json:"name,omitempty" portal:"attr:Fullname"`
+	Notifications        []*NotiSchema `json:"notifications,omitempty" portal:"nested"`
+	AnotherNotifications []*NotiSchema `json:"another_notifications,omitempty" portal:"nested;attr:Notifications"`
 }
 
 type TaskSchema struct {

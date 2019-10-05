@@ -141,7 +141,17 @@ func (f *Field) tagHasOption(opt string) bool {
 	return false
 }
 
-func (f *Field) NestedOnlyNames() (names []string) {
+func (f *Field) NestedOnlyNames(customFilters []*FilterNode) (names []string) {
+	filterNames := ExtractFilterNodeNames(
+		customFilters, &ExtractOption{queryByParentName: f.Name()})
+	if len(filterNames) > 0 {
+		return filterNames
+	} else {
+		return f.nestedOnlyNamesParsedFromTag()
+	}
+}
+
+func (f *Field) nestedOnlyNamesParsedFromTag() (names []string) {
 	if onlyNames, ok := f.settings["ONLY"]; ok {
 		for _, name := range strings.Split(onlyNames, ",") {
 			names = append(names, strings.TrimSpace(name))
@@ -150,7 +160,19 @@ func (f *Field) NestedOnlyNames() (names []string) {
 	return
 }
 
-func (f *Field) NestedExcludeNames() (names []string) {
+func (f *Field) NestedExcludeNames(customFilters []*FilterNode) []string {
+	fieldNames := ExtractFilterNodeNames(
+		customFilters,
+		&ExtractOption{ignoreNodeWithChildren: true, queryByParentName: f.Name()},
+	)
+	if len(fieldNames) > 0 {
+		return fieldNames
+	} else {
+		return f.nestedExcludeNamesParsedFromTag()
+	}
+}
+
+func (f *Field) nestedExcludeNamesParsedFromTag() (names []string) {
 	if excludeNames, ok := f.settings["EXCLUDE"]; ok {
 		for _, name := range strings.Split(excludeNames, ",") {
 			names = append(names, strings.TrimSpace(name))

@@ -51,11 +51,14 @@ func (c *Chell) DumpWithContext(ctx context.Context, dst, src interface{}) error
 	}
 
 	if reflect.Indirect(rv).Kind() == reflect.Slice {
-		return c.dumpMany(ctx, dst, src)
+		return c.dumpMany(
+			ctx, dst, src,
+			ExtractFilterNodeNames(c.onlyFieldFilters[0], nil),
+			ExtractFilterNodeNames(c.excludeFieldFilters[0], &ExtractOption{ignoreNodeWithChildren: true}))
 	} else {
 		toSchema := NewSchema(dst)
-		toSchema.SetOnlyFields(ExtractFilterNodeNames(c.onlyFieldFilters[0], false)...)
-		toSchema.SetExcludeFields(ExtractFilterNodeNames(c.excludeFieldFilters[0], true)...)
+		toSchema.SetOnlyFields(ExtractFilterNodeNames(c.onlyFieldFilters[0], nil)...)
+		toSchema.SetExcludeFields(ExtractFilterNodeNames(c.excludeFieldFilters[0], &ExtractOption{ignoreNodeWithChildren: true})...)
 		return c.dump(IncrDumpDepthContext(ctx), toSchema, src)
 	}
 }
@@ -158,20 +161,8 @@ func (c *Chell) dumpFieldNestedOne(ctx context.Context, field *Field, src interf
 	toNestedSchema := NewSchema(val.Interface())
 
 	depth := DumpDepthFromContext(ctx)
-	nestedOnlyNames := ExtractFilterNodeNames(c.onlyFieldFilters[depth], false)
-	if len(nestedOnlyNames) > 0 {
-		toNestedSchema.SetOnlyFields(nestedOnlyNames...)
-	} else {
-		toNestedSchema.SetOnlyFields(field.NestedOnlyNames()...)
-	}
-
-	nestedExcludeNames := ExtractFilterNodeNames(c.excludeFieldFilters[depth], true)
-	if len(nestedExcludeNames) > 0 {
-		toNestedSchema.SetExcludeFields(nestedExcludeNames...)
-	} else {
-		toNestedSchema.SetExcludeFields(field.NestedExcludeNames()...)
-	}
-
+	toNestedSchema.SetOnlyFields(field.NestedOnlyNames(c.onlyFieldFilters[depth])...)
+	toNestedSchema.SetExcludeFields(field.NestedExcludeNames(c.excludeFieldFilters[depth])...)
 	err := c.dump(IncrDumpDepthContext(ctx), toNestedSchema, src)
 	if err != nil {
 		return err
@@ -189,7 +180,14 @@ func (c *Chell) dumpFieldNestedOne(ctx context.Context, field *Field, src interf
 func (c *Chell) dumpFieldNestedMany(ctx context.Context, field *Field, src interface{}) error {
 	typ := reflect.TypeOf(field.Value())
 	nestedSchemaSlice := reflect.New(typ)
-	err := c.dumpMany(ctx, nestedSchemaSlice.Interface(), src)
+	depth := DumpDepthFromContext(ctx)
+	err := c.dumpMany(
+		ctx,
+		nestedSchemaSlice.Interface(),
+		src,
+		field.NestedOnlyNames(c.onlyFieldFilters[depth]),
+		field.NestedExcludeNames(c.excludeFieldFilters[depth]),
+	)
 	if err != nil {
 		return err
 	}
@@ -209,7 +207,7 @@ func (c *Chell) dumpFieldNestedMany(ctx context.Context, field *Field, src inter
 	return nil
 }
 
-func (c *Chell) dumpMany(ctx context.Context, dst, src interface{}) error {
+func (c *Chell) dumpMany(ctx context.Context, dst, src interface{}, onlyFields, excludeFields []string) error {
 	rv := reflect.ValueOf(src)
 	if rv.Kind() == reflect.Ptr {
 		rv = reflect.Indirect(rv)
@@ -241,9 +239,8 @@ func (c *Chell) dumpMany(ctx context.Context, dst, src interface{}) error {
 
 			schemaPtr := reflect.New(schemaType)
 			toSchema := NewSchema(schemaPtr.Interface())
-			depth := DumpDepthFromContext(ctx)
-			toSchema.SetOnlyFields(ExtractFilterNodeNames(c.onlyFieldFilters[depth], false)...)
-			toSchema.SetExcludeFields(ExtractFilterNodeNames(c.excludeFieldFilters[depth], true)...)
+			toSchema.SetOnlyFields(onlyFields...)
+			toSchema.SetExcludeFields(excludeFields...)
 			val := rv.Index(index).Interface()
 			err := c.dump(IncrDumpDepthContext(ctx), toSchema, val)
 			items <- &Item{

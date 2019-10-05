@@ -23,14 +23,27 @@ func (node *FilterNode) String() string {
 	return string(data)
 }
 
-func ExtractFilterNodeNames(nodes []*FilterNode, ignoreWithChildren bool) []string {
+type ExtractOption struct {
+	ignoreNodeWithChildren bool
+	queryByParentName      string
+}
+
+func ExtractFilterNodeNames(nodes []*FilterNode, opt *ExtractOption) []string {
 	if len(nodes) == 0 {
 		return nil
 	}
 
+	if opt == nil {
+		opt = &ExtractOption{}
+	}
+
 	names := make([]string, 0, len(nodes))
 	for _, n := range nodes {
-		if ignoreWithChildren && len(n.Children) > 0 {
+		if opt.queryByParentName != "" && n.Parent.Name != opt.queryByParentName {
+			continue
+		}
+
+		if opt.ignoreNodeWithChildren && len(n.Children) > 0 {
 			continue
 		}
 
@@ -97,10 +110,10 @@ func checkBracketPairs(s []byte) error {
 
 func doParse(s []byte) map[int][]*FilterNode {
 	var (
-		wordBuf          []byte
-		levelNodesMap    = make(map[int][]*FilterNode)
-		levelParentNodes = []*FilterNode{nil}
-		level            = -1
+		wordBuf            []byte
+		levelNodesMap      = make(map[int][]*FilterNode)
+		levelParentNodeMap = map[int]*FilterNode{-1: nil}
+		level              = -1
 	)
 
 	appendNodes := func() *FilterNode {
@@ -113,7 +126,7 @@ func doParse(s []byte) map[int][]*FilterNode {
 			nthLevelNodes = make([]*FilterNode, 0)
 		}
 
-		node := &FilterNode{Name: string(wordBuf), Parent: levelParentNodes[level]}
+		node := &FilterNode{Name: string(wordBuf), Parent: levelParentNodeMap[level]}
 		nthLevelNodes = append(nthLevelNodes, node)
 		levelNodesMap[level] = nthLevelNodes
 		wordBuf = make([]byte, 0)
@@ -128,10 +141,10 @@ func doParse(s []byte) map[int][]*FilterNode {
 			_ = appendNodes()
 		case '[':
 			node := appendNodes()
-			if node != nil {
-				levelParentNodes = append(levelParentNodes, node)
-			}
 			level++
+			if node != nil {
+				levelParentNodeMap[level] = node
+			}
 		case ']':
 			appendNodes()
 			level--

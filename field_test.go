@@ -155,7 +155,7 @@ func TestField_NestedOnlyNames(t *testing.T) {
 
 	schema := NewSchema(&FooSchema{})
 	f := NewField(schema, schema.Struct().Field("Bar"))
-	assert.Equal(t, []string{"Name"}, f.NestedOnlyNames())
+	assert.Equal(t, []string{"Name"}, f.NestedOnlyNames(nil))
 }
 
 func TestField_NestedExcludeNames(t *testing.T) {
@@ -170,5 +170,5 @@ func TestField_NestedExcludeNames(t *testing.T) {
 
 	schema := NewSchema(&FooSchema{})
 	f := NewField(schema, schema.Struct().Field("Bar"))
-	assert.Equal(t, []string{"Name"}, f.NestedExcludeNames())
+	assert.Equal(t, []string{"Name"}, f.NestedExcludeNames(nil))
 }

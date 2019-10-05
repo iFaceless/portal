@@ -11,6 +11,7 @@ import (
 )
 
 func main() {
+	//fmt.Println(portal.ParseFilterString("[A,B[C,D],E[F,G],H]"))
 	portal.SetDebug(true)
 	task := model.TaskModel{
 		ID:     1,
@@ -21,12 +22,12 @@ func main() {
 	// {"id":"1","title":"Finish your jobs.","description":"Custom description","user":{"id":"1","name":"user:1"}}
 	//printFullFields(&task)
 	// {"title":"Finish your jobs.","user":{"id":"1","name":"user:1"}}
-	//printWithOnlyFields(&task, "ID", "User[ID,Notifications[ID]]")
+	//printWithOnlyFields(&task, "ID", "User[ID,Notifications[ID,Title],AnotherNotifications[ID]]", "SimpleUser")
 	// {"title":"Finish your jobs."}
 	//printWithOnlyFields(&task, "User", "SimpleUser")
 	//
 	//printMany()
-	printWithExcludeFields(&task, "ID", "User[Name]")
+	printWithExcludeFields(&task, "Description", "ID", "User[Name,Notifications,AnotherNotifications[ID]]")
 }
 
 func printFullFields(task *model.TaskModel) {
