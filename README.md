@@ -28,44 +28,44 @@ Full example can be found [here](./examples/todo).
 ## Model Definitions
 
 <details>
-	<summary>CLICK HERE | model.go</summary>
-	
-	```go
-    type NotificationModel struct {
-    	ID      int
-    	Title   string
-    	Content string
-    }
-    
-    type UserModel struct {
-    	ID int
-    }
-    
-    func (u *UserModel) Fullname() string {
-    	return fmt.Sprintf("user:%d", u.ID)
-    }
-    
-    func (u *UserModel) Notifications() (result []*NotificationModel) {
-    	for i := 0; i < 1; i++ {
-    		result = append(result, &NotificationModel{
-    			ID:      i,
-    			Title:   fmt.Sprintf("title_%d", i),
-    			Content: fmt.Sprintf("content_%d", i),
-    		})
-    	}
-    	return
-    }
-    
-    type TaskModel struct {
-    	ID     int
-    	UserID int
-    	Title  string
-    }
-    
-    func (t *TaskModel) User() *UserModel {
-    	return &UserModel{t.UserID}
-    }
-    ```
+<summary>CLICK HERE | model.go</summary>
+
+```go
+type NotificationModel struct {
+	ID      int
+	Title   string
+	Content string
+}
+
+type UserModel struct {
+	ID int
+}
+
+func (u *UserModel) Fullname() string {
+	return fmt.Sprintf("user:%d", u.ID)
+}
+
+func (u *UserModel) Notifications() (result []*NotificationModel) {
+	for i := 0; i < 1; i++ {
+		result = append(result, &NotificationModel{
+			ID:      i,
+			Title:   fmt.Sprintf("title_%d", i),
+			Content: fmt.Sprintf("content_%d", i),
+		})
+	}
+	return
+}
+
+type TaskModel struct {
+	ID     int
+	UserID int
+	Title  string
+}
+
+func (t *TaskModel) User() *UserModel {
+	return &UserModel{t.UserID}
+}
+```
     
 </details>
 
@@ -75,36 +75,36 @@ Full example can be found [here](./examples/todo).
 <details>
 	<summary>CLICK HERE | schema.go</summary>
 	
-	```go
-	type NotiSchema struct {
-    	ID      string `json:"id,omitempty"`
-    	Title   string `json:"title,omitempty"`
-    	Content string `json:"content,omitempty"`
-    }
-    
-    type UserSchema struct {
-    	ID                   string        `json:"id,omitempty"`
-    	// Get user name from `UserModel.Fullname()`
-    	Name                 string        `json:"name,omitempty" portal:"attr:Fullname"`
-    	Notifications        []*NotiSchema `json:"notifications,omitempty" portal:"nested"`
-    	AnotherNotifications []*NotiSchema `json:"another_notifications,omitempty" portal:"nested;attr:Notifications"`
-    }
-    
-    type TaskSchema struct {
-    	ID          string      `json:"id,omitempty"`
-    	Title       string      `json:"title,omitempty"`
-    	Description string      `json:"description,omitempty" portal:"meth:GetDescription"`
-    	// UserSchema is a nested schema
-    	User        *UserSchema `json:"user,omitempty" portal:"nested"`
-    	// We just want `Name` field for `SimpleUser`.
-    	// Besides, the datasource is the same with `UserSchema`
-    	SimpleUser  *UserSchema `json:"simple_user,omitempty" portal:"nested;only:Name;attr:User"`
-    }
-    
-    func (ts *TaskSchema) GetDescription(model *model.TaskModel) string {
-    	return "Custom description"
-    }
-	```
+```go
+type NotiSchema struct {
+	ID      string `json:"id,omitempty"`
+	Title   string `json:"title,omitempty"`
+	Content string `json:"content,omitempty"`
+}
+
+type UserSchema struct {
+	ID                   string        `json:"id,omitempty"`
+	// Get user name from `UserModel.Fullname()`
+	Name                 string        `json:"name,omitempty" portal:"attr:Fullname"`
+	Notifications        []*NotiSchema `json:"notifications,omitempty" portal:"nested"`
+	AnotherNotifications []*NotiSchema `json:"another_notifications,omitempty" portal:"nested;attr:Notifications"`
+}
+
+type TaskSchema struct {
+	ID          string      `json:"id,omitempty"`
+	Title       string      `json:"title,omitempty"`
+	Description string      `json:"description,omitempty" portal:"meth:GetDescription"`
+	// UserSchema is a nested schema
+	User        *UserSchema `json:"user,omitempty" portal:"nested"`
+	// We just want `Name` field for `SimpleUser`.
+	// Besides, the data source is the same with `UserSchema`
+	SimpleUser  *UserSchema `json:"simple_user,omitempty" portal:"nested;only:Name;attr:User"`
+}
+
+func (ts *TaskSchema) GetDescription(model *model.TaskModel) string {
+	return "Custom description"
+}
+```
 
 </details>
 
