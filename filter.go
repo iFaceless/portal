@@ -3,6 +3,7 @@ package portal
 import (
 	"encoding/json"
 	"strings"
+	"sync"
 
 	"github.com/pkg/errors"
 )
@@ -10,6 +11,11 @@ import (
 var (
 	ErrUnmatchedBrackets  = errors.New("unmatched brackets")
 	ErrPrefixIsNotBracket = errors.New("filter string must starts with '['")
+)
+
+var (
+	cachedParseResultMap = make(map[string]map[int][]*FilterNode)
+	lock                 sync.RWMutex
 )
 
 type FilterNode struct {
@@ -70,13 +76,28 @@ func ParseFilterString(s string) (map[int][]*FilterNode, error) {
 		return nil, ErrPrefixIsNotBracket
 	}
 
+	lock.RLock()
+	cachedResult, ok := cachedParseResultMap[s]
+	if ok {
+		lock.RUnlock()
+		return cachedResult, nil
+	}
+	lock.RUnlock()
+
+	lock.Lock()
+	// don't care about non-ascii chars.
 	filterInBytes := []byte(s)
 	err := checkBracketPairs(filterInBytes)
 	if err != nil {
+		lock.Unlock()
 		return nil, errors.WithStack(err)
 	}
 
-	return doParse(filterInBytes), nil
+	result := doParse(filterInBytes)
+	cachedParseResultMap[s] = result
+	lock.Unlock()
+
+	return result, nil
 }
 
 func checkBracketPairs(s []byte) error {
@@ -108,6 +129,8 @@ func checkBracketPairs(s []byte) error {
 	return nil
 }
 
+// doParse parses filter string to a filter tree.
+// Note: stupid & ugly~
 func doParse(s []byte) map[int][]*FilterNode {
 	var (
 		wordBuf            []byte
