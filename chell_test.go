@@ -63,8 +63,8 @@ type TaskSchema struct {
 	ID          string      `json:"id,omitempty"`
 	Title       string      `json:"title,omitempty"`
 	Description string      `json:"description,omitempty" portal:"meth:GetDescription"`
-	User        *UserSchema `json:"user,omitempty" portal:"nested"`
-	SimpleUser  *UserSchema `json:"simple_user,omitempty" portal:"nested;only:Name;attr:User"`
+	User        *UserSchema `json:"user,omitempty" portal:"nested;async"`
+	SimpleUser  *UserSchema `json:"simple_user,omitempty" portal:"async;nested;only:Name;attr:User"`
 }
 
 func (ts *TaskSchema) GetDescription(model *TaskModel) string {
@@ -176,4 +176,16 @@ func TestChellDumpOk(t *testing.T) {
 
 	data, _ = json.Marshal(taskSchema2)
 	assert.Equal(t, `{"title":"Finish your jobs.","user":{"id":"1","notifications":[{"title":"title_0"}]}}`, string(data))
+}
+
+func TestChellBoundaryConditions(t *testing.T) {
+	task := TaskModel{
+		ID:     1,
+		UserID: 1,
+		Title:  "Finish your jobs.",
+	}
+
+	var taskSchema TaskSchema
+	err := Dump(taskSchema, task)
+	assert.Equal(t, "dst must be a pointer", err.Error())
 }
