@@ -2,6 +2,7 @@ package portal
 
 import (
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -171,4 +172,47 @@ func TestField_NestedExcludeNames(t *testing.T) {
 	schema := NewSchema(&FooSchema{})
 	f := NewField(schema, schema.Struct().Field("Bar"))
 	assert.Equal(t, []string{"Name"}, f.NestedExcludeNames(nil))
+}
+
+type Person struct {
+	Name string
+}
+
+func (p *Person) Value() (interface{}, error) {
+	return p.Name, nil
+}
+
+type Timestamp int
+
+func (t *Timestamp) SetValue(v interface{}) error {
+	*t = Timestamp(v.(time.Time).Unix())
+	return nil
+}
+
+func TestField_SetValue(t *testing.T) {
+	type BarSchema struct {
+		ID   string
+		Name string
+		Ts   *Timestamp
+		Ts2  Timestamp
+	}
+
+	schema := NewSchema(&BarSchema{})
+	f := NewField(schema, schema.Struct().Field("ID"))
+	assert.Nil(t, f.SetValue(10))
+	assert.Equal(t, "10", f.Value().(string))
+
+	f = NewField(schema, schema.Struct().Field("Name"))
+	assert.Nil(t, f.SetValue(&Person{Name: "foo"}))
+	assert.Equal(t, "foo", f.Value().(string))
+
+	f = NewField(schema, schema.Struct().Field("Ts"))
+
+	now := time.Now()
+	assert.Nil(t, f.SetValue(now))
+	assert.Equal(t, Timestamp(now.Unix()), *f.Value().(*Timestamp))
+
+	f = NewField(schema, schema.Struct().Field("Ts2"))
+	assert.Nil(t, f.SetValue(now))
+	assert.Equal(t, Timestamp(now.Unix()), f.Value().(Timestamp))
 }

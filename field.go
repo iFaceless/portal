@@ -52,6 +52,8 @@ func (f *Field) realInputValue(v interface{}) (interface{}, error) {
 	switch r := v.(type) {
 	case driver.Valuer:
 		return r.Value()
+	case Valuer:
+		return r.Value()
 	default:
 		return v, nil
 	}
