@@ -151,6 +151,7 @@ func TestDumpError(t *testing.T) {
 
 	var taskSchema TaskSchema
 	err := Dump(&taskSchema, &task, Only("Title", "SimpleUser["))
+	assert.NotNil(t, err)
 	assert.Equal(t, ErrUnmatchedBrackets.Error(), err.Error())
 }
 
@@ -187,5 +188,6 @@ func TestChellBoundaryConditions(t *testing.T) {
 
 	var taskSchema TaskSchema
 	err := Dump(taskSchema, task)
+	assert.NotNil(t, err)
 	assert.Equal(t, "dst must be a pointer", err.Error())
 }
