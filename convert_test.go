@@ -779,6 +779,10 @@ func (s *SuiteConvertTester) Test_ConvertWithReflect() {
 	var targetPtr *User
 	_, err = Convert(targetPtr, user)
 	s.NotNil(err)
+
+	var targetInt int
+	_, err = Convert(targetInt, "1.23abc")
+	s.NotNil(err)
 }
 
 func TestSuiteConvert(t *testing.T) {
