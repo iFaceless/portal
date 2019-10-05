@@ -29,6 +29,7 @@ Full example can be found [here](./examples/todo).
 
 <details>
 	<summary>CLICK HERE | model.go</summary>
+	
 	<p>
 	```go
     type NotificationModel struct {
@@ -74,6 +75,7 @@ Full example can be found [here](./examples/todo).
 
 <details>
 	<summary>CLICK HERE | schema.go</summary>
+	
 	<p>
 	```go
 	type NotiSchema struct {
