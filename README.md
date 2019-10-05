@@ -15,6 +15,13 @@ Most importantly, if some fields of a schema have different data sources, portal
 
 *Note: currently, [portal](https://github.com/iFaceless/portal/) is still in ALPHA stage, not production ready yet. The first stable version will be released in a few weeks, so stay tuned~*
 
+# Features
+
+1. Can be configured to fill data into multiple fields concurrently.
+1. Support flexible field filtering for any (nested) schemas.
+1. Automatically convert field data to the expected field type, no more boilerplate code.
+1. Simple and clean API.
+
 # Install
 
 ```
