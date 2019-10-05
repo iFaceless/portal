@@ -19,7 +19,7 @@ func (u *UserModel) Fullname() string {
 }
 
 func (u *UserModel) Notifications() (result []*NotificationModel) {
-	for i := 0; i < 2; i++ {
+	for i := 0; i < 1; i++ {
 		result = append(result, &NotificationModel{
 			ID:      i,
 			Title:   fmt.Sprintf("title_%d", i),

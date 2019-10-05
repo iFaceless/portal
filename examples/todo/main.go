@@ -11,23 +11,27 @@ import (
 )
 
 func main() {
-	//fmt.Println(portal.ParseFilterString("[A,B[C,D],E[F,G],H]"))
-	portal.SetDebug(true)
+	portal.SetDebug(false)
 	task := model.TaskModel{
 		ID:     1,
 		UserID: 1,
 		Title:  "Finish your jobs.",
 	}
 
-	// {"id":"1","title":"Finish your jobs.","description":"Custom description","user":{"id":"1","name":"user:1"}}
-	//printFullFields(&task)
-	// {"title":"Finish your jobs.","user":{"id":"1","name":"user:1"}}
-	//printWithOnlyFields(&task, "ID", "User[ID,Notifications[ID,Title],AnotherNotifications[ID]]", "SimpleUser")
-	// {"title":"Finish your jobs."}
-	//printWithOnlyFields(&task, "User", "SimpleUser")
-	//
-	//printMany()
-	printWithExcludeFields(&task, "Description", "ID", "User[Name,Notifications,AnotherNotifications[ID]]")
+	// {"id":"1","title":"Finish your jobs.","description":"Custom description","user":{"id":"1","name":"user:1","notifications":[{"id":"0","title":"title_0","content":"content_0"}],"another_notifications":[{"id":"0","title":"title_0","content":"content_0"}]},"simple_user":{"name":"user:1"}}
+	printFullFields(&task)
+
+	// {"title":"Finish your jobs.","simple_user":{"name":"user:1"}}
+	printWithOnlyFields(&task, "Title", "SimpleUser")
+
+	// {"id":"1","user":{"id":"1","notifications":[{"id":"0"}],"another_notifications":[{"title":"title_0"}]},"simple_user":{"name":"user:1"}}
+	printWithOnlyFields(&task, "ID", "User[ID,Notifications[ID],AnotherNotifications[Title]]", "SimpleUser")
+
+	// [{"id":"0","title":"Task #1","user":{"name":"user:100"}},{"id":"1","title":"Task #2","user":{"name":"user:101"}}]
+	printMany()
+
+	// {"title":"Finish your jobs.","user":{"id":"1","notifications":[{"title":"title_0"}]}}
+	printWithExcludeFields(&task, "Description", "ID", "User[Name,Notifications[ID,Content],AnotherNotifications], SimpleUser")
 }
 
 func printFullFields(task *model.TaskModel) {
@@ -72,7 +76,7 @@ func printMany() {
 		})
 	}
 
-	err := portal.Dump(&taskSchemas, &tasks, portal.Only("ID", "Title"))
+	err := portal.Dump(&taskSchemas, &tasks, portal.Only("ID", "Title", "User[Name]"))
 	if err != nil {
 		panic(err)
 	}
