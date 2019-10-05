@@ -18,5 +18,5 @@ before_install:
 script:
   - 'go mod tidy'
   - '`go env GOPATH`/bin/golangci-lint run'
-  - 'go test -tags test -v -covermode=atomic -coverprofile=coverage.out -race'
+  - 'go test -v -covermode=atomic -coverprofile=coverage.out -race'
   - 'goveralls -coverprofile=coverage.out -service=travis-ci'
