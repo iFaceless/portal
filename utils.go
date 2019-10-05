@@ -48,10 +48,10 @@ func InvokeMethod(ctx context.Context, any interface{}, name string, args ...int
 
 	numIn := methodType.NumIn()
 	if numIn > len(args) {
-		return reflect.ValueOf(nil), fmt.Errorf("method '%s' must have minimum %d params: %d", name, numIn, len(args))
+		return reflect.ValueOf(nil), fmt.Errorf("method '%s' must has minimum %d params: %d", name, numIn, len(args))
 	}
 	if numIn != len(args) && !methodType.IsVariadic() {
-		return reflect.ValueOf(nil), fmt.Errorf("method '%s' must have %d params: %d", name, numIn, len(args))
+		return reflect.ValueOf(nil), fmt.Errorf("method '%s' must has %d params: %d", name, numIn, len(args))
 	}
 	in := make([]reflect.Value, len(args))
 	for i := 0; i < len(args); i++ {

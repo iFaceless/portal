@@ -144,6 +144,14 @@ func TestInvokeMethod(t *testing.T) {
 
 	ret, err = InvokeMethod(ctx, &book, "MethodNotFound")
 	assert.Errorf(t, err, "method 'MethodNotFound' not found in 'Book'")
+
+	_, err = InvokeMethod(ctx, &book, "Plus")
+	assert.NotNil(t, err)
+	assert.Equal(t, "method 'Plus' must has minimum 2 params: 1", err.Error())
+
+	_, err = InvokeMethod(ctx, &book, "Plus", 1, 2)
+	assert.NotNil(t, err)
+	assert.Equal(t, "method 'Plus' must has 2 params: 3", err.Error())
 }
 
 //1000000	      1371 ns/op
