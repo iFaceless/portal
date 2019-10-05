@@ -289,7 +289,7 @@ func (c *Chell) Exclude(fields ...string) *Chell {
 	if err != nil {
 		cpy.err = err
 	} else {
-		cpy.onlyFieldFilters = filters
+		cpy.excludeFieldFilters = filters
 	}
 	return cpy
 }

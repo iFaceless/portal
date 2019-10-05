@@ -16,7 +16,7 @@ type PersonSchema struct {
 	Age int
 }
 
-type UserSchema struct {
+type UserSchema2 struct {
 	PersonSchema
 	ID     string
 	Name   string        `portal:"meth:GetName"`
@@ -24,13 +24,13 @@ type UserSchema struct {
 	Async  int           `portal:"async"`
 }
 
-func (u *UserSchema) GetName(user interface{}) interface{} {
+func (u *UserSchema2) GetName(user interface{}) interface{} {
 	return "test"
 }
 
 func TestSchema(t *testing.T) {
-	schema := NewSchema(&UserSchema{})
-	assert.Equal(t, "UserSchema", schema.Name())
+	schema := NewSchema(&UserSchema2{})
+	assert.Equal(t, "UserSchema2", schema.Name())
 	assert.NotNil(t, schema.Struct())
 
 	user := struct {
@@ -55,7 +55,7 @@ func TestSchema(t *testing.T) {
 }
 
 func TestSchema_GetFields(t *testing.T) {
-	schema := NewSchema(&UserSchema{})
+	schema := NewSchema(&UserSchema2{})
 	assert.ElementsMatch(t, []string{"Age", "ID", "Name", "School", "Async"}, filedNames(schema.AvailableFields()))
 
 	assert.ElementsMatch(t, []string{"Age", "ID", "Name", "School"}, filedNames(schema.SyncFields()))
@@ -64,7 +64,7 @@ func TestSchema_GetFields(t *testing.T) {
 	schema.SetOnlyFields("ID")
 	assert.ElementsMatch(t, []string{"ID"}, filedNames(schema.AvailableFields()))
 
-	schema = NewSchema(&UserSchema{})
+	schema = NewSchema(&UserSchema2{})
 	schema.SetExcludeFields("ID", "Name", "School")
 	assert.ElementsMatch(t, []string{"Age", "Async"}, filedNames(schema.AvailableFields()))
 }
