@@ -13,7 +13,7 @@ It's a lightweight package which simplifies Go object serialization. Inspired he
 
 Most importantly, if some fields of a schema have different data sources, portal could **spawn several goroutines to retrieve fields' data concurrently** if you prefer.
 
-*Note: currently, [portal](https://github.com/iFaceless/portal/) is still in ALPHA stage, not production ready yet. The first stable version will be released in a few weeks, so stay tuned~*
+*Note: currently, [portal](https://github.com/iFaceless/portal/) is still in BETA stage, not production ready yet. The first stable version will be released in a few weeks, so stay tuned~*
 
 # Features
 
