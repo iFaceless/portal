@@ -494,6 +494,293 @@ func (s *SuiteConvertTester) TestToFloat64Ptr() {
 	s.Equal(float64(1.234), *out.(*float64))
 }
 
+func (s *SuiteConvertTester) TestToStringMapString() {
+	var target map[string]string
+
+	x := map[interface{}]interface{}{
+		"hello": "world",
+	}
+
+	out, err := Convert(target, x)
+	s.Nil(err)
+	s.Equal(map[string]string{"hello": "world"}, out.(map[string]string))
+
+	out, err = Convert(target, &x)
+	s.Nil(err)
+	s.Equal(map[string]string{"hello": "world"}, out.(map[string]string))
+}
+
+func (s *SuiteConvertTester) TestToStringMapStringPtr() {
+	var target *map[string]string
+
+	x := map[interface{}]interface{}{
+		"hello": "world",
+	}
+
+	out, err := Convert(target, x)
+	s.Nil(err)
+	s.Equal(map[string]string{"hello": "world"}, *out.(*map[string]string))
+
+	out, err = Convert(target, &x)
+	s.Nil(err)
+	s.Equal(map[string]string{"hello": "world"}, *out.(*map[string]string))
+}
+
+func (s *SuiteConvertTester) TestToStringMapStringSlice() {
+	var target map[string][]string
+
+	x := map[interface{}]interface{}{
+		"hello": []string{"world"},
+	}
+
+	out, err := Convert(target, x)
+	s.Nil(err)
+	s.Equal(map[string][]string{"hello": {"world"}}, out.(map[string][]string))
+
+	out, err = Convert(target, &x)
+	s.Nil(err)
+	s.Equal(map[string][]string{"hello": {"world"}}, out.(map[string][]string))
+}
+
+func (s *SuiteConvertTester) TestToStringMapStringSlicePtr() {
+	var target *map[string][]string
+
+	x := map[interface{}]interface{}{
+		"hello": []string{"world"},
+	}
+
+	out, err := Convert(target, x)
+	s.Nil(err)
+	s.Equal(map[string][]string{"hello": {"world"}}, *out.(*map[string][]string))
+
+	out, err = Convert(target, &x)
+	s.Nil(err)
+	s.Equal(map[string][]string{"hello": {"world"}}, *out.(*map[string][]string))
+}
+
+func (s *SuiteConvertTester) TestToStringMapBool() {
+	var target map[string]bool
+
+	x := map[interface{}]interface{}{
+		"hello": true,
+	}
+
+	out, err := Convert(target, x)
+	s.Nil(err)
+	s.Equal(map[string]bool{"hello": true}, out.(map[string]bool))
+
+	out, err = Convert(target, &x)
+	s.Nil(err)
+	s.Equal(map[string]bool{"hello": true}, out.(map[string]bool))
+}
+
+func (s *SuiteConvertTester) TestToStringMapBoolPtr() {
+	var target *map[string]bool
+
+	x := map[interface{}]interface{}{
+		"hello": true,
+	}
+
+	out, err := Convert(target, x)
+	s.Nil(err)
+	s.Equal(map[string]bool{"hello": true}, *out.(*map[string]bool))
+
+	out, err = Convert(target, &x)
+	s.Nil(err)
+	s.Equal(map[string]bool{"hello": true}, *out.(*map[string]bool))
+}
+
+func (s *SuiteConvertTester) TestToStringMap() {
+	var target map[string]interface{}
+
+	x := map[interface{}]interface{}{
+		"hello": true,
+	}
+
+	out, err := Convert(target, x)
+	s.Nil(err)
+	s.Equal(map[string]interface{}{"hello": true}, out.(map[string]interface{}))
+
+	out, err = Convert(target, &x)
+	s.Nil(err)
+	s.Equal(map[string]interface{}{"hello": true}, out.(map[string]interface{}))
+}
+
+func (s *SuiteConvertTester) TestToStringMapPtr() {
+	var target *map[string]interface{}
+
+	x := map[interface{}]interface{}{
+		"hello": true,
+	}
+
+	out, err := Convert(target, x)
+	s.Nil(err)
+	s.Equal(map[string]interface{}{"hello": true}, *out.(*map[string]interface{}))
+
+	out, err = Convert(target, &x)
+	s.Nil(err)
+	s.Equal(map[string]interface{}{"hello": true}, *out.(*map[string]interface{}))
+}
+
+func (s *SuiteConvertTester) TestToSlice() {
+	var target []interface{}
+
+	x := []interface{}{1, 2, 3}
+
+	out, err := Convert(target, x)
+	s.Nil(err)
+	s.Equal([]interface{}{1, 2, 3}, out.([]interface{}))
+
+	out, err = Convert(target, &x)
+	s.Nil(err)
+	s.Equal([]interface{}{1, 2, 3}, out.([]interface{}))
+}
+
+func (s *SuiteConvertTester) TestToSlicePtr() {
+	var target *[]interface{}
+
+	x := []interface{}{1, 2, 3}
+
+	out, err := Convert(target, x)
+	s.Nil(err)
+	s.Equal([]interface{}{1, 2, 3}, *out.(*[]interface{}))
+
+	out, err = Convert(target, &x)
+	s.Nil(err)
+	s.Equal([]interface{}{1, 2, 3}, *out.(*[]interface{}))
+}
+
+func (s *SuiteConvertTester) TestToBoolSlice() {
+	var target []bool
+
+	x := []interface{}{1, 0, "true", "false"}
+
+	out, err := Convert(target, x)
+	s.Nil(err)
+	s.Equal([]bool{true, false, true, false}, out.([]bool))
+
+	out, err = Convert(target, &x)
+	s.Nil(err)
+	s.Equal([]bool{true, false, true, false}, out.([]bool))
+}
+
+func (s *SuiteConvertTester) TestToBoolSlicePtr() {
+	var target *[]bool
+
+	x := []interface{}{1, 0, "true", "false"}
+
+	out, err := Convert(target, x)
+	s.Nil(err)
+	s.Equal([]bool{true, false, true, false}, *out.(*[]bool))
+
+	out, err = Convert(target, &x)
+	s.Nil(err)
+	s.Equal([]bool{true, false, true, false}, *out.(*[]bool))
+}
+
+func (s *SuiteConvertTester) TestToStringSlice() {
+	var target []string
+
+	x := []interface{}{1, "2", true}
+
+	out, err := Convert(target, x)
+	s.Nil(err)
+	s.Equal([]string{"1", "2", "true"}, out.([]string))
+
+	out, err = Convert(target, &x)
+	s.Nil(err)
+	s.Equal([]string{"1", "2", "true"}, out.([]string))
+}
+
+func (s *SuiteConvertTester) TestToStringSlicePtr() {
+	var target *[]string
+
+	x := []interface{}{1, "2", true}
+
+	out, err := Convert(target, x)
+	s.Nil(err)
+	s.Equal([]string{"1", "2", "true"}, *out.(*[]string))
+
+	out, err = Convert(target, &x)
+	s.Nil(err)
+	s.Equal([]string{"1", "2", "true"}, *out.(*[]string))
+}
+
+func (s *SuiteConvertTester) TestToIntSlice() {
+	var target []int
+
+	x := []interface{}{"1", "2"}
+
+	out, err := Convert(target, x)
+	s.Nil(err)
+	s.Equal([]int{1, 2}, out.([]int))
+
+	out, err = Convert(target, &x)
+	s.Nil(err)
+	s.Equal([]int{1, 2}, out.([]int))
+}
+
+func (s *SuiteConvertTester) TestToIntSlicePtr() {
+	var target *[]int
+
+	x := []interface{}{"1", "2"}
+
+	out, err := Convert(target, x)
+	s.Nil(err)
+	s.Equal([]int{1, 2}, *out.(*[]int))
+
+	out, err = Convert(target, &x)
+	s.Nil(err)
+	s.Equal([]int{1, 2}, *out.(*[]int))
+}
+
+func (s *SuiteConvertTester) TestToDurationSlice() {
+	var target []time.Duration
+
+	d, _ := time.ParseDuration("300ms")
+
+	out, err := Convert(target, []string{"300ms"})
+	s.Nil(err)
+	s.Equal([]time.Duration{d}, out.([]time.Duration))
+
+	x := []string{"300ms"}
+	out, err = Convert(target, &x)
+	s.Nil(err)
+	s.Equal([]time.Duration{d}, out.([]time.Duration))
+}
+
+func (s *SuiteConvertTester) TestToDurationSlicePtr() {
+	var target *[]time.Duration
+
+	d, _ := time.ParseDuration("300ms")
+
+	out, err := Convert(target, []string{"300ms"})
+	s.Nil(err)
+	s.Equal([]time.Duration{d}, *out.(*[]time.Duration))
+
+	x := []string{"300ms"}
+	out, err = Convert(target, &x)
+	s.Nil(err)
+	s.Equal([]time.Duration{d}, *out.(*[]time.Duration))
+}
+
+func (s *SuiteConvertTester) Test_ConvertWithReflect() {
+	type User struct {
+		Name string
+	}
+
+	user := User{Name: "foo"}
+
+	var target User
+	out, err := Convert(target, user)
+	s.Nil(err)
+	s.Equal(user, out.(User))
+
+	var targetPtr *User
+	_, err = Convert(targetPtr, user)
+	s.NotNil(err)
+}
+
 func TestSuiteConvert(t *testing.T) {
 	suite.Run(t, new(SuiteConvertTester))
 }
