@@ -150,6 +150,10 @@ func doParse(s []byte) map[int][]*FilterNode {
 		}
 
 		node := &FilterNode{Name: string(wordBuf), Parent: levelParentNodeMap[level]}
+		parent := node.Parent
+		if parent != nil {
+			parent.Children = append(parent.Children, node)
+		}
 		nthLevelNodes = append(nthLevelNodes, node)
 		levelNodesMap[level] = nthLevelNodes
 		wordBuf = make([]byte, 0)
@@ -177,17 +181,6 @@ func doParse(s []byte) map[int][]*FilterNode {
 	}
 
 	appendNodes()
-
-	// scan the map again to build a filter tree
-	for i := 0; i < len(levelNodesMap)-1; i++ {
-		for _, parentNode := range levelNodesMap[i] {
-			for _, childNode := range levelNodesMap[i+1] {
-				if childNode.Parent == parentNode {
-					parentNode.Children = append(parentNode.Children, childNode)
-				}
-			}
-		}
-	}
 
 	return levelNodesMap
 }
