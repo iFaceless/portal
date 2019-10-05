@@ -13,12 +13,12 @@ type SchoolSchema struct {
 }
 
 type PersonSchema struct {
-	Age int
+	ID  string `json:"id"`
+	Age int    `json:"age"`
 }
 
 type UserSchema2 struct {
 	PersonSchema
-	ID     string
 	Name   string        `portal:"meth:GetName"`
 	School *SchoolSchema `portal:"nested"`
 	Async  int           `portal:"async"`
