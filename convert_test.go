@@ -2,6 +2,7 @@ package portal
 
 import (
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/suite"
 )
@@ -325,6 +326,172 @@ func (s *SuiteConvertTester) TestToUint8Ptr() {
 		s.Nil(err)
 		s.Equal(uint8(100), *out.(*uint8))
 	}
+}
+
+func (s *SuiteConvertTester) TestToString() {
+	for _, c := range intCases {
+		tmp := c
+
+		var target string
+		out, err := Convert(target, tmp)
+		s.Nil(err)
+		s.Equal("100", out.(string))
+
+		out, err = Convert(target, &tmp)
+		s.Nil(err)
+		s.Equal("100", out.(string))
+	}
+}
+
+func (s *SuiteConvertTester) TestToStringPtr() {
+	for _, c := range intCases {
+		tmp := c
+
+		var target *string
+		out, err := Convert(target, tmp)
+		s.Nil(err)
+		s.Equal("100", *out.(*string))
+
+		out, err = Convert(target, &tmp)
+		s.Nil(err)
+		s.Equal("100", *out.(*string))
+	}
+}
+
+func (s *SuiteConvertTester) TestToTime() {
+	var target time.Time
+
+	t, _ := time.Parse("2006-01-02", "2019-10-05")
+	out, err := Convert(target, "2019-10-05")
+	s.Nil(err)
+	s.Equal(t, out.(time.Time))
+
+	x := "2019-10-05"
+	out, err = Convert(target, &x)
+	s.Nil(err)
+	s.Equal(t, out.(time.Time))
+}
+
+func (s *SuiteConvertTester) TestToTimePtr() {
+	var target *time.Time
+
+	t, _ := time.Parse("2006-01-02", "2019-10-05")
+	out, err := Convert(target, "2019-10-05")
+	s.Nil(err)
+	s.Equal(t, *out.(*time.Time))
+
+	x := "2019-10-05"
+	out, err = Convert(target, &x)
+	s.Nil(err)
+	s.Equal(t, *out.(*time.Time))
+}
+
+func (s *SuiteConvertTester) TestToDuration() {
+	var target time.Duration
+
+	d, _ := time.ParseDuration("300ms")
+
+	out, err := Convert(target, "300ms")
+	s.Nil(err)
+	s.Equal(d, out.(time.Duration))
+
+	x := "300ms"
+	out, err = Convert(target, &x)
+	s.Nil(err)
+	s.Equal(d, out.(time.Duration))
+}
+
+func (s *SuiteConvertTester) TestToDurationPtr() {
+	var target *time.Duration
+
+	d, _ := time.ParseDuration("300ms")
+
+	out, err := Convert(target, "300ms")
+	s.Nil(err)
+	s.Equal(d, *out.(*time.Duration))
+
+	x := "300ms"
+	out, err = Convert(target, &x)
+	s.Nil(err)
+	s.Equal(d, *out.(*time.Duration))
+}
+
+func (s *SuiteConvertTester) TestToBool() {
+	var target bool
+
+	out, err := Convert(target, "1")
+	s.Nil(err)
+	s.Equal(true, out.(bool))
+
+	x := "0"
+	out, err = Convert(target, &x)
+	s.Nil(err)
+	s.Equal(false, out.(bool))
+}
+
+func (s *SuiteConvertTester) TestToBoolPtr() {
+	var target *bool
+
+	out, err := Convert(target, "1")
+	s.Nil(err)
+	s.Equal(true, *out.(*bool))
+
+	x := "0"
+	out, err = Convert(target, &x)
+	s.Nil(err)
+	s.Equal(false, *out.(*bool))
+}
+
+func (s *SuiteConvertTester) TestToFloat32() {
+	var target float32
+
+	out, err := Convert(target, "1.234")
+	s.Nil(err)
+	s.Equal(float32(1.234), out.(float32))
+
+	x := "1.234"
+	out, err = Convert(target, &x)
+	s.Nil(err)
+	s.Equal(float32(1.234), out.(float32))
+}
+
+func (s *SuiteConvertTester) TestToFloat32Ptr() {
+	var target *float32
+
+	out, err := Convert(target, "1.234")
+	s.Nil(err)
+	s.Equal(float32(1.234), *out.(*float32))
+
+	x := "1.234"
+	out, err = Convert(target, &x)
+	s.Nil(err)
+	s.Equal(float32(1.234), *out.(*float32))
+}
+
+func (s *SuiteConvertTester) TestToFloat64() {
+	var target float64
+
+	out, err := Convert(target, "1.234")
+	s.Nil(err)
+	s.Equal(float64(1.234), out.(float64))
+
+	x := "1.234"
+	out, err = Convert(target, &x)
+	s.Nil(err)
+	s.Equal(float64(1.234), out.(float64))
+}
+
+func (s *SuiteConvertTester) TestToFloat64Ptr() {
+	var target *float64
+
+	out, err := Convert(target, "1.234")
+	s.Nil(err)
+	s.Equal(float64(1.234), *out.(*float64))
+
+	x := "1.234"
+	out, err = Convert(target, &x)
+	s.Nil(err)
+	s.Equal(float64(1.234), *out.(*float64))
 }
 
 func TestSuiteConvert(t *testing.T) {
