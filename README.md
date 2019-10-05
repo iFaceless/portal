@@ -30,8 +30,6 @@ Full example can be found [here](./examples/todo).
 <details>
 	<summary>CLICK HERE | model.go</summary>
 	
-	<p>
-	
 	```go
     type NotificationModel struct {
     	ID      int
@@ -69,7 +67,6 @@ Full example can be found [here](./examples/todo).
     }
     ```
     
-	</p>
 </details>
 
 
@@ -77,8 +74,6 @@ Full example can be found [here](./examples/todo).
 
 <details>
 	<summary>CLICK HERE | schema.go</summary>
-	
-	<p>
 	
 	```go
 	type NotiSchema struct {
@@ -110,8 +105,7 @@ Full example can be found [here](./examples/todo).
     	return "Custom description"
     }
 	```
-	
-	</p>
+
 </details>
 
 
