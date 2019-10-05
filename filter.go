@@ -150,9 +150,8 @@ func doParse(s []byte) map[int][]*FilterNode {
 		}
 
 		node := &FilterNode{Name: string(wordBuf), Parent: levelParentNodeMap[level]}
-		parent := node.Parent
-		if parent != nil {
-			parent.Children = append(parent.Children, node)
+		if node.Parent != nil {
+			node.Parent.Children = append(node.Parent.Children, node)
 		}
 		nthLevelNodes = append(nthLevelNodes, node)
 		levelNodesMap[level] = nthLevelNodes
