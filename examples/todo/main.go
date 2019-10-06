@@ -16,7 +16,7 @@ func main() {
 	start := time.Now()
 	defer portal.CleanUp()
 
-	portal.TuneMaxPoolSize(1)
+	portal.SetMaxPoolSize(1024)
 	portal.SetDebug(true)
 
 	task := model.TaskModel{

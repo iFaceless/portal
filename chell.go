@@ -28,10 +28,14 @@ func New(opts ...Option) (*Chell, error) {
 	return chell, nil
 }
 
+// Dump dumps src data to dst. You can filter fields with
+// optional config `portal.Only` or `portal.Exclude`.
 func Dump(dst, src interface{}, opts ...Option) error {
 	return DumpWithContext(context.TODO(), dst, src, opts...)
 }
 
+// DumpWithContext dumps src data to dst with an extra context param.
+// You can filter fields with optional config `portal.Only` or `portal.Exclude`.
 func DumpWithContext(ctx context.Context, dst, src interface{}, opts ...Option) error {
 	chell, err := New(opts...)
 	if err != nil {
@@ -41,10 +45,14 @@ func DumpWithContext(ctx context.Context, dst, src interface{}, opts ...Option) 
 	return chell.DumpWithContext(ctx, dst, src)
 }
 
+// Dump dumps src data to dst. You can filter fields with
+// optional config `portal.Only` or `portal.Exclude`.
 func (c *Chell) Dump(dst, src interface{}) error {
 	return c.DumpWithContext(context.TODO(), dst, src)
 }
 
+// DumpWithContext dumps src data to dst with an extra context param.
+// You can filter fields with optional config `portal.Only` or `portal.Exclude`.
 func (c *Chell) DumpWithContext(ctx context.Context, dst, src interface{}) error {
 	rv := reflect.ValueOf(dst)
 	if rv.Kind() != reflect.Ptr {
@@ -62,6 +70,40 @@ func (c *Chell) DumpWithContext(ctx context.Context, dst, src interface{}) error
 		toSchema.SetExcludeFields(ExtractFilterNodeNames(c.excludeFieldFilters[0], &ExtractOption{ignoreNodeWithChildren: true})...)
 		return c.dump(IncrDumpDepthContext(ctx), toSchema, src)
 	}
+}
+
+// SetOnlyFields specifies the fields to keep.
+// Examples:
+// ```
+// c := New()
+// c.SetOnlyFields("A") // keep field A only
+// c.SetOnlyFields("A[B,C]") // keep field B and C of the nested struct A
+// ```
+func (c *Chell) SetOnlyFields(fields ...string) error {
+	filters, err := ParseFilters(fields)
+	if err != nil {
+		return errors.WithStack(err)
+	} else {
+		c.onlyFieldFilters = filters
+	}
+	return nil
+}
+
+// SetOnlyFields specifies the fields to exclude.
+// Examples:
+// ```
+// c := New()
+// c.SetExcludeFields("A") // exclude field A
+// c.SetExcludeFields("A[B,C]") // exclude field B and C of the nested struct A, but other fields of struct A are still selected.
+// ```
+func (c *Chell) SetExcludeFields(fields ...string) error {
+	filters, err := ParseFilters(fields)
+	if err != nil {
+		return errors.WithStack(err)
+	} else {
+		c.excludeFieldFilters = filters
+	}
+	return nil
 }
 
 func (c *Chell) dump(ctx context.Context, dst *Schema, src interface{}) error {
@@ -134,7 +176,7 @@ func (c *Chell) dumpAsyncFields(ctx context.Context, dst *Schema, src interface{
 		return errors.WithStack(err)
 	}
 
-	for _, jobResult := range jobResults {
+	for jobResult := range jobResults {
 		if jobResult.Err != nil {
 			return errors.WithStack(jobResult.Err)
 		}
@@ -264,7 +306,7 @@ func (c *Chell) dumpMany(ctx context.Context, dst, src interface{}, onlyFields, 
 		return errors.WithStack(err)
 	}
 
-	for _, jobResult := range jobResults {
+	for jobResult := range jobResults {
 		if jobResult.Err != nil {
 			return errors.WithStack(jobResult.Err)
 		}
@@ -277,26 +319,6 @@ func (c *Chell) dumpMany(ctx context.Context, dst, src interface{}, onlyFields, 
 		case reflect.Ptr:
 			elem.Set(r.schemaPtr)
 		}
-	}
-	return nil
-}
-
-func (c *Chell) SetOnlyFields(fields ...string) error {
-	filters, err := ParseFilters(fields)
-	if err != nil {
-		return errors.WithStack(err)
-	} else {
-		c.onlyFieldFilters = filters
-	}
-	return nil
-}
-
-func (c *Chell) SetExcludeFields(fields ...string) error {
-	filters, err := ParseFilters(fields)
-	if err != nil {
-		return errors.WithStack(err)
-	} else {
-		c.excludeFieldFilters = filters
 	}
 	return nil
 }

@@ -129,7 +129,7 @@ func main()  {
 	// log debug info
 	portal.SetDebug(true)
 	// set max worker pool size
-	portal.TuneMaxPoolSize(1024)
+	portal.SetMaxPoolSize(1024)
 	// make sure to clean up.
 	defer portal.CleanUp()
 	

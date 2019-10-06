@@ -28,22 +28,26 @@ var (
 )
 
 type (
-	ProcessFunc   func(payload interface{}) (interface{}, error)
-	WorkerRequest struct {
+	// ProcessFunc is a callback function to be called in a worker.
+	// It accepts user defined payload and returns user expected result.
+	ProcessFunc func(payload interface{}) (interface{}, error)
+	jobRequest  struct {
 		ctx        context.Context
 		wg         *sync.WaitGroup
 		payload    interface{}
 		pf         ProcessFunc
-		resultChan chan *WorkerResult
+		resultChan chan *JobResult
 	}
 
-	WorkerResult struct {
+	// JobResult contains the result data and an optional error.
+	JobResult struct {
 		Data interface{}
 		Err  error
 	}
 )
 
-func SubmitJobs(ctx context.Context, pf ProcessFunc, payloads ...interface{}) ([]*WorkerResult, error) {
+// SubmitJobs submits jobs to the worker pool and return the collected results.
+func SubmitJobs(ctx context.Context, pf ProcessFunc, payloads ...interface{}) (<-chan *JobResult, error) {
 	logger.Debugf("[portal.pool] submit jobs with %d payloads", len(payloads))
 	var wg sync.WaitGroup
 
@@ -63,14 +67,14 @@ func SubmitJobs(ctx context.Context, pf ProcessFunc, payloads ...interface{}) ([
 
 		levelWorkerPoolMap[level] = pool
 		workerPool = pool
-		TuneMaxPoolSize(maxWorkerPoolSize)
+		SetMaxPoolSize(maxWorkerPoolSize)
 		lockLevelWorkerPoolMap.Unlock()
 	}
 
-	resultChan := make(chan *WorkerResult, len(payloads))
+	resultChan := make(chan *JobResult, len(payloads))
 	for _, payload := range payloads {
 		wg.Add(1)
-		err := workerPool.Invoke(&WorkerRequest{
+		err := workerPool.Invoke(&jobRequest{
 			ctx:        ctx,
 			wg:         &wg,
 			payload:    payload,
@@ -88,20 +92,21 @@ func SubmitJobs(ctx context.Context, pf ProcessFunc, payloads ...interface{}) ([
 		close(resultChan)
 	}()
 
-	results := make([]*WorkerResult, 0, len(payloads))
+	results := make(chan *JobResult, len(payloads))
 	for result := range resultChan {
 		if result.Err != nil {
 			cancel()
 		}
 
-		results = append(results, result)
+		results <- result
 	}
+	close(results)
 
 	return results, nil
 }
 
-// TuneMaxPoolSize limits the capacity of all worker pools.
-func TuneMaxPoolSize(size int) {
+// SetMaxPoolSize limits the capacity of all worker pools.
+func SetMaxPoolSize(size int) {
 	logger.Debugf("[portal.pool] set max worker pool size to %d", size)
 	if size == 0 {
 		maxWorkerPoolSize = 1
@@ -134,14 +139,14 @@ func CleanUp() {
 
 func processRequest(request interface{}) {
 	switch req := request.(type) {
-	case *WorkerRequest:
+	case *jobRequest:
 		defer req.wg.Done()
 
 		select {
 		case <-req.ctx.Done():
-		case req.resultChan <- func() *WorkerResult {
+		case req.resultChan <- func() *JobResult {
 			data, err := req.pf(req.payload)
-			return &WorkerResult{Data: data, Err: err}
+			return &JobResult{Data: data, Err: err}
 		}():
 		}
 	default:
