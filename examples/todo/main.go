@@ -13,7 +13,12 @@ import (
 )
 
 func main() {
+	start := time.Now()
+	defer portal.CleanUp()
+
+	portal.TuneMaxPoolSize(1)
 	portal.SetDebug(true)
+
 	task := model.TaskModel{
 		ID:     1,
 		UserID: 1,
@@ -24,16 +29,17 @@ func main() {
 	printFullFields(&task)
 
 	// {"title":"Finish your jobs.","simple_user":{"name":"user:1"}}
-	//printWithOnlyFields(&task, "Title", "SimpleUser")
+	printWithOnlyFields(&task, "Title", "SimpleUser")
 
 	// {"id":"1","user":{"id":"1","notifications":[{"id":"0"}],"another_notifications":[{"title":"title_0"}]},"simple_user":{"name":"user:1"}}
-	//printWithOnlyFields(&task, "ID", "User[ID,Notifications[ID],AnotherNotifications[Title]]", "SimpleUser")
+	printWithOnlyFields(&task, "ID", "User[ID,Notifications[ID],AnotherNotifications[Title]]", "SimpleUser")
 
 	// [{"id":"0","title":"Task #1","user":{"name":"user:100"}},{"id":"1","title":"Task #2","user":{"name":"user:101"}}]
-	//printMany()
+	printMany()
 
 	// {"title":"Finish your jobs.","user":{"id":"1","notifications":[{"title":"title_0"}]}}
-	//printWithExcludeFields(&task, "Description", "ID", "User[Name,Notifications[ID,Content],AnotherNotifications], SimpleUser")
+	printWithExcludeFields(&task, "Description", "ID", "User[Name,Notifications[ID,Content],AnotherNotifications], SimpleUser")
+	fmt.Printf("elapsed: %.1f ms\n", time.Since(start).Seconds()*1000)
 }
 
 func printFullFields(task *model.TaskModel) {
@@ -73,7 +79,7 @@ func printMany() {
 	var taskSchemas []schema.TaskSchema
 
 	tasks := make([]*model.TaskModel, 0)
-	for i := 0; i < 2; i++ {
+	for i := 0; i < 10; i++ {
 		tasks = append(tasks, &model.TaskModel{
 			ID:     i,
 			UserID: i + 100,
@@ -81,7 +87,7 @@ func printMany() {
 		})
 	}
 
-	err := portal.Dump(&taskSchemas, &tasks, portal.Only("ID", "Title", "User[Name]"))
+	err := portal.Dump(&taskSchemas, &tasks, portal.Only("ID", "Title", "User[Name]", "Description"))
 	if err != nil {
 		panic(err)
 	}

@@ -13,3 +13,4 @@
 .DS_Store
 go.sum
 .idea/
+tmp/

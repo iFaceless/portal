@@ -3,21 +3,14 @@ package portal
 import (
 	"context"
 	"reflect"
-	"sync"
 
 	"github.com/pkg/errors"
 )
 
-// Chell manages the dumping state and a worker pool.
+// Chell manages the dumping state.
 type Chell struct {
 	onlyFieldFilters    map[int][]*FilterNode
 	excludeFieldFilters map[int][]*FilterNode
-
-	// workerPoolSize is default to `runtime.NumCPU()`.
-	// Since the number of incoming requests are unknown,
-	// we must limit the spawned goroutines to avoid
-	// consuming too many resources.
-	workerPoolSize int
 }
 
 // New creates a new Chell instance with a worker pool waiting to be feed.
@@ -30,10 +23,6 @@ func New(opts ...Option) (*Chell, error) {
 		if err != nil {
 			return nil, errors.WithStack(err)
 		}
-	}
-
-	if chell.workerPoolSize <= 0 {
-		chell.workerPoolSize = 10
 	}
 
 	return chell, nil
@@ -88,8 +77,13 @@ func (c *Chell) dump(ctx context.Context, dst *Schema, src interface{}) error {
 }
 
 func (c *Chell) dumpSyncFields(ctx context.Context, dst *Schema, src interface{}) error {
-	logger.Debugln("[portal.chell] dump sync fields")
-	for _, field := range dst.SyncFields() {
+	syncFields := dst.SyncFields()
+	if len(syncFields) == 0 {
+		return nil
+	}
+
+	logger.Debugf("[portal.chell] dump sync fields: %s", syncFields)
+	for _, field := range syncFields {
 		logger.Debugf("[portal.chell] processing sync field '%s'", field)
 		val, err := dst.FieldValueFromData(ctx, field, src)
 		if err != nil {
@@ -106,61 +100,52 @@ func (c *Chell) dumpSyncFields(ctx context.Context, dst *Schema, src interface{}
 }
 
 func (c *Chell) dumpAsyncFields(ctx context.Context, dst *Schema, src interface{}) error {
-	logger.Debugln("[portal.chell] dump async fields")
-	ctx, cancel := context.WithCancel(ctx)
-	defer cancel()
+	asyncFields := dst.AsyncFields()
+	if len(asyncFields) == 0 {
+		return nil
+	}
 
-	type Item struct {
+	logger.Debugf("[portal.chell] dump async fields: %s", asyncFields)
+	type Result struct {
 		field *Field
 		data  interface{}
-		err   error
 	}
 
-	var wg sync.WaitGroup
-	items := make(chan *Item, MinInt(len(dst.AsyncFields()), c.workerPoolSize))
-
-	for _, field := range dst.AsyncFields() {
-		wg.Add(1)
-		go func(f *Field) {
-			defer wg.Done()
-
-			logger.Debugf("[portal.chell] processing async field '%s'", f)
-			select {
-			case <-ctx.Done():
-				logger.Debugf("[portal.chell] processing async field '%s' failed: cancelling signal received", f)
-			default:
-				val, err := dst.FieldValueFromData(ctx, f, src)
-				logger.Debugf("[portal.chell] async field '%s' got value '%v'", f, val)
-				items <- &Item{f, val, err}
-			}
-
-		}(field)
+	type Payload struct {
+		field *Field
 	}
 
-	go func() {
-		select {
-		case <-ctx.Done():
-		default:
-			wg.Wait()
-		}
-		close(items)
-	}()
+	workerPayloads := make([]interface{}, 0, len(asyncFields))
+	for _, field := range asyncFields {
+		workerPayloads = append(workerPayloads, &Payload{field: field})
+	}
 
-	var err error
-	for item := range items {
-		if item.err != nil {
-			cancel()
-			err = item.err
+	jobResults, err := SubmitJobs(
+		ctx,
+		func(payload interface{}) (interface{}, error) {
+			p := payload.(*Payload)
+			logger.Debugf("[portal.chell] processing async field '%s'", p.field)
+			val, err := dst.FieldValueFromData(ctx, p.field, src)
+			logger.Debugf("[portal.chell] async field '%s' got value '%v'", p.field, val)
+			return &Result{field: p.field, data: val}, err
+		},
+		workerPayloads...)
+	if err != nil {
+		return errors.WithStack(err)
+	}
+
+	for _, jobResult := range jobResults {
+		if jobResult.Err != nil {
+			return errors.WithStack(jobResult.Err)
 		}
 
-		e := c.dumpField(ctx, item.field, item.data)
+		result := jobResult.Data.(*Result)
+		e := c.dumpField(ctx, result.field, result.data)
 		if e != nil {
-			cancel()
-			err = e
+			return errors.WithStack(err)
 		}
 	}
-
-	return err
+	return nil
 }
 
 func (c *Chell) dumpField(ctx context.Context, field *Field, value interface{}) error {
@@ -249,54 +234,48 @@ func (c *Chell) dumpMany(ctx context.Context, dst, src interface{}, onlyFields, 
 
 	schemaSlice := reflect.Indirect(reflect.ValueOf(dst))
 	schemaSlice.Set(reflect.MakeSlice(schemaSlice.Type(), rv.Len(), rv.Cap()))
-
 	schemaType := IndirectStructTypeP(schemaSlice.Type())
 
-	var wg sync.WaitGroup
-
-	type Item struct {
+	type Result struct {
 		index     int
 		schemaPtr reflect.Value
 		err       error
 	}
 
-	items := make(chan *Item, MinInt(rv.Len(), c.workerPoolSize))
-
+	payloads := make([]interface{}, 0, rv.Len())
 	for i := 0; i < rv.Len(); i++ {
-		wg.Add(1)
-		go func(index int) {
-			defer wg.Done()
+		payloads = append(payloads, i)
+	}
 
+	jobResults, err := SubmitJobs(
+		ctx,
+		func(payload interface{}) (interface{}, error) {
+			index := payload.(int)
 			schemaPtr := reflect.New(schemaType)
 			toSchema := NewSchema(schemaPtr.Interface())
 			toSchema.SetOnlyFields(onlyFields...)
 			toSchema.SetExcludeFields(excludeFields...)
 			val := rv.Index(index).Interface()
 			err := c.dump(IncrDumpDepthContext(ctx), toSchema, val)
-			items <- &Item{
-				index:     index,
-				schemaPtr: schemaPtr,
-				err:       err,
-			}
-		}(i)
+			return &Result{index: index, schemaPtr: schemaPtr}, err
+		},
+		payloads...)
+	if err != nil {
+		return errors.WithStack(err)
 	}
 
-	go func() {
-		wg.Wait()
-		close(items)
-	}()
-
-	for item := range items {
-		if item.err != nil {
-			return item.err
+	for _, jobResult := range jobResults {
+		if jobResult.Err != nil {
+			return errors.WithStack(jobResult.Err)
 		}
 
-		elem := schemaSlice.Index(item.index)
+		r := jobResult.Data.(*Result)
+		elem := schemaSlice.Index(r.index)
 		switch elem.Kind() {
 		case reflect.Struct:
-			elem.Set(reflect.Indirect(item.schemaPtr))
+			elem.Set(reflect.Indirect(r.schemaPtr))
 		case reflect.Ptr:
-			elem.Set(item.schemaPtr)
+			elem.Set(r.schemaPtr)
 		}
 	}
 	return nil

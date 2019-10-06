@@ -25,12 +25,3 @@ func Exclude(fields ...string) Option {
 		return nil
 	}
 }
-
-func WorkerPoolSize(size int) Option {
-	return func(c *Chell) error {
-		if size > 0 {
-			c.workerPoolSize = size
-		}
-		return nil
-	}
-}

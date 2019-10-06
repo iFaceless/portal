@@ -25,6 +25,8 @@ type TaskSchema struct {
 	Title        string      `json:"title,omitempty"`
 	Description  string      `json:"description,omitempty" portal:"meth:GetDescription;async"`
 	Description1 string      `json:"description1,omitempty" portal:"meth:GetDescription;async"`
+	Description2 string      `json:"description2,omitempty" portal:"meth:GetDescription;async"`
+	Description3 string      `json:"description3,omitempty" portal:"meth:GetDescription;async"`
 	User         *UserSchema `json:"user,omitempty" portal:"nested"`
 	SimpleUser   *UserSchema `json:"simple_user,omitempty" portal:"nested;only:Name;attr:User"`
 }
