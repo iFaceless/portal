@@ -7,11 +7,9 @@
 
 It's a lightweight package which simplifies Go object serialization. Inspired heavily by [marshmallow](https://github.com/marshmallow-code/marshmallow), but with concurrency builtin for better performance.
 
-[portal](https://github.com/iFaceless/portal/) can be used to:
-- **Validate** input data (not ready now, but you can use [go-playground/validator](https://github.com/go-playground/validator) or [asaskevich/govalidator](https://github.com/asaskevich/govalidator) instead).
-- **Serialize** app-level objects to specified objects (schema structs). The serialized objects can be rendered to any standard formats like JSON for an HTTP API.
+[portal](https://github.com/iFaceless/portal/) can be used to serialize app-level objects to specified objects (schema structs). The serialized objects can be rendered to any standard formats like JSON for an HTTP API. Most importantly, if some fields of a schema have different data sources, portal could **spawn several goroutines to retrieve fields' data concurrently**.
 
-Most importantly, if some fields of a schema have different data sources, portal could **spawn several goroutines to retrieve fields' data concurrently** if you prefer.
+*Note that unlike [marshmallow](https://github.com/marshmallow-code/marshmallow), [portal](https://github.com/iFaceless/portal/) only focuses on object serialization. So, if you want to validate struct fields, please refer to  [go-playground/validator](https://github.com/go-playground/validator) or [asaskevich/govalidator](https://github.com/asaskevich/govalidator).*
 
 
 # Features
@@ -167,6 +165,16 @@ func main() {
 
 To learn more about [portal](https://github.com/iFaceless/portal), please read the [User Guide](./USERGUIDE.md)~ 
 
+# Core APIs
+
+```go
+func New(opts ...Option) (*Chell, error)
+func Dump(dst, src interface{}, opts ...Option) error 
+func DumpWithContext(ctx context.Context, dst, src interface{}, opts ...Option)
+func SetDebug(v bool)
+func SetMaxPoolSize(size int)
+func CleanUp()
+```
 # License
 
 [portal](https://github.com/iFaceless/portal) is licensed under the [MIT license](./LICENSE). Please feel free and have fun~
