@@ -3,6 +3,7 @@ package portal
 import (
 	"database/sql/driver"
 	"strings"
+	"sync"
 
 	"reflect"
 
@@ -10,7 +11,9 @@ import (
 )
 
 var (
-	defaultTagName = "portal"
+	defaultTagName             = "portal"
+	cachedFieldTagSettings     = make(map[string]map[string]string)
+	lockCachedFieldTagSettings sync.Mutex
 )
 
 type Field struct {
@@ -21,13 +24,21 @@ type Field struct {
 }
 
 func NewField(schema *Schema, field *structs.Field) *Field {
-	schField := &Field{
-		Field:    field,
-		schema:   schema,
-		settings: parseTagSettings(field.Tag(defaultTagName)),
+	tagStr := field.Tag(defaultTagName)
+	settings, ok := cachedFieldTagSettings[tagStr]
+	if !ok {
+		lockCachedFieldTagSettings.Lock()
+		result := parseTagSettings(tagStr)
+		cachedFieldTagSettings[tagStr] = result
+		settings = result
+		lockCachedFieldTagSettings.Unlock()
 	}
 
-	return schField
+	return &Field{
+		Field:    field,
+		schema:   schema,
+		settings: settings,
+	}
 }
 
 func (f *Field) String() string {

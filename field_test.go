@@ -216,3 +216,16 @@ func TestField_SetValue(t *testing.T) {
 	assert.Nil(t, f.SetValue(now))
 	assert.Equal(t, Timestamp(now.Unix()), f.Value().(Timestamp))
 }
+
+// BenchmarkNewField-4   	 3622506	       317 ns/op
+func BenchmarkNewField(b *testing.B) {
+	type FooSchema struct {
+		Name string `portal:"async;meth:GetName"`
+	}
+
+	schema := NewSchema(&FooSchema{})
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		NewField(schema, schema.Struct().Field("Name"))
+	}
+}
