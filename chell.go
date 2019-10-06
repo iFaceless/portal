@@ -281,7 +281,6 @@ func (c *Chell) dumpMany(ctx context.Context, dst, src interface{}, onlyFields, 
 	type Result struct {
 		index     int
 		schemaPtr reflect.Value
-		err       error
 	}
 
 	payloads := make([]interface{}, 0, rv.Len())
