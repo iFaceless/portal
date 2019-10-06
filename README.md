@@ -125,42 +125,42 @@ import (
 	"github.com/ifaceless/portal"
 )
 
-func main()  {
+func main() {
 	// log debug info
 	portal.SetDebug(true)
 	// set max worker pool size
 	portal.SetMaxPoolSize(1024)
 	// make sure to clean up.
 	defer portal.CleanUp()
-	
-    // write to a specified task schema
-    var taskSchema schema.TaskSchema
-    portal.Dump(&taskSchema, &taskModel)
-    // data: {"id":"1","title":"Finish your jobs.","description":"Custom description","user":{"id":"1","name":"user:1","notifications":[{"id":"0","title":"title_0","content":"content_0"}],"another_notifications":[{"id":"0","title":"title_0","content":"content_0"}]},"simple_user":{"name":"user:1"}}
-    data, _ := json.Marshal(taskSchema)
- 
-    // select specified fields
-    portal.Dump(&taskSchema, &taskModel, portal.Only("Title","SimpleUser"))
-    // data: {"title":"Finish your jobs.","simple_user":{"name":"user:1"}}
-    data, _ := json.Marshal(taskSchema)
-    
-    // you can keep any fields for any nested schemas
-    // multiple fields are separated with ','
-    // nested fields are wrapped with '[' and ']'
-    portal.Dump(&taskSchema, &taskModel, portal.Only("ID", "User[ID,Notifications[ID],AnotherNotifications[Title]]", "SimpleUser"))
-    // data: {"id":"1","user":{"id":"1","notifications":[{"id":"0"}],"another_notifications":[{"title":"title_0"}]},"simple_user":{"name":"user:1"}}
-    data, _ := json.Marshal(taskSchema)
- 
-    // ignore specified fields
-    portal.Dump(&taskSchema, &taskModel, portal.Exclude("Description", "ID", "User[Name,Notifications[ID,Content],AnotherNotifications], SimpleUser"))
-    // data: {"title":"Finish your jobs.","user":{"id":"1","notifications":[{"title":"title_0"}]}}
-    data, _ := json.Marshal(taskSchema)
- 
-    // dump multiple tasks
-    var taskSchemas []schema.TaskSchema
-    portal.Dump(&taskSchemas, &taskModels, portal.Only("ID", "Title", "User[Name]"))
-    // data: [{"id":"0","title":"Task #1","user":{"name":"user:100"}},{"id":"1","title":"Task #2","user":{"name":"user:101"}}]
-    data, _ := json.Marshal(taskSchema)
+
+	// write to a specified task schema
+	var taskSchema schema.TaskSchema
+	portal.Dump(&taskSchema, &taskModel)
+	// data: {"id":"1","title":"Finish your jobs.","description":"Custom description","user":{"id":"1","name":"user:1","notifications":[{"id":"0","title":"title_0","content":"content_0"}],"another_notifications":[{"id":"0","title":"title_0","content":"content_0"}]},"simple_user":{"name":"user:1"}}
+	data, _ := json.Marshal(taskSchema)
+
+	// select specified fields
+	portal.Dump(&taskSchema, &taskModel, portal.Only("Title", "SimpleUser"))
+	// data: {"title":"Finish your jobs.","simple_user":{"name":"user:1"}}
+	data, _ := json.Marshal(taskSchema)
+
+	// you can keep any fields for any nested schemas
+	// multiple fields are separated with ','
+	// nested fields are wrapped with '[' and ']'
+	portal.Dump(&taskSchema, &taskModel, portal.Only("ID", "User[ID,Notifications[ID],AnotherNotifications[Title]]", "SimpleUser"))
+	// data: {"id":"1","user":{"id":"1","notifications":[{"id":"0"}],"another_notifications":[{"title":"title_0"}]},"simple_user":{"name":"user:1"}}
+	data, _ := json.Marshal(taskSchema)
+
+	// ignore specified fields
+	portal.Dump(&taskSchema, &taskModel, portal.Exclude("Description", "ID", "User[Name,Notifications[ID,Content],AnotherNotifications], SimpleUser"))
+	// data: {"title":"Finish your jobs.","user":{"id":"1","notifications":[{"title":"title_0"}]}}
+	data, _ := json.Marshal(taskSchema)
+
+	// dump multiple tasks
+	var taskSchemas []schema.TaskSchema
+	portal.Dump(&taskSchemas, &taskModels, portal.Only("ID", "Title", "User[Name]"))
+	// data: [{"id":"0","title":"Task #1","user":{"name":"user:100"}},{"id":"1","title":"Task #2","user":{"name":"user:101"}}]
+	data, _ := json.Marshal(taskSchema)
 }
 
 ```
