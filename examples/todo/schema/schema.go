@@ -1,6 +1,10 @@
 package schema
 
-import "github.com/ifaceless/portal/examples/todo/model"
+import (
+	"time"
+
+	"github.com/ifaceless/portal/examples/todo/model"
+)
 
 type NotiSchema struct {
 	Type    string `json:"type" portal:"const:vip"`
@@ -17,13 +21,15 @@ type UserSchema struct {
 }
 
 type TaskSchema struct {
-	ID          string      `json:"id,omitempty"`
-	Title       string      `json:"title,omitempty"`
-	Description string      `json:"description,omitempty" portal:"meth:GetDescription"`
-	User        *UserSchema `json:"user,omitempty" portal:"nested"`
-	SimpleUser  *UserSchema `json:"simple_user,omitempty" portal:"nested;only:Name;attr:User"`
+	ID           string      `json:"id,omitempty"`
+	Title        string      `json:"title,omitempty"`
+	Description  string      `json:"description,omitempty" portal:"meth:GetDescription;async"`
+	Description1 string      `json:"description1,omitempty" portal:"meth:GetDescription;async"`
+	User         *UserSchema `json:"user,omitempty" portal:"nested"`
+	SimpleUser   *UserSchema `json:"simple_user,omitempty" portal:"nested;only:Name;attr:User"`
 }
 
 func (ts *TaskSchema) GetDescription(model *model.TaskModel) string {
+	time.Sleep(1 * time.Second)
 	return "Custom description"
 }

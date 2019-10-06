@@ -3,62 +3,40 @@ package portal
 import (
 	"context"
 	"reflect"
-	"runtime"
 	"sync"
-	"time"
 
-	"github.com/Jeffail/tunny"
 	"github.com/pkg/errors"
 )
 
 // Chell manages the dumping state and a worker pool.
 type Chell struct {
-	err error
-
 	onlyFieldFilters    map[int][]*FilterNode
 	excludeFieldFilters map[int][]*FilterNode
 
-	// workerPool is a fixed-size goroutine pool to
-	// fill data into schema fields concurrently.
-	//
+	// workerPoolSize is default to `runtime.NumCPU()`.
 	// Since the number of incoming requests are unknown,
 	// we must limit the spawned goroutines to avoid
 	// consuming too many resources.
-	workerPool *tunny.Pool
-
-	// workerPoolSize is default to `runtime.NumCPU()`.
 	workerPoolSize int
-
-	// workerTimeout tells the worker how long to wait
-	// before getting the processed result.
-	// If the worker timeout occurs, Chell will get an
-	// error: `ErrJobTimedOut`.
-	// Default timeout is '0', which means the worker will
-	// wait until the processed result coming out.
-	workerTimeout time.Duration
 }
 
 // New creates a new Chell instance with a worker pool waiting to be feed.
-// After dumping process finished, you're responsible to call the `Close()`
-// method to release resource occupied.
 // It's highly recommended to call function `portal.Dump()` or
 // `portal.DumpWithContext()` directly.
-func New(opts ...Option) *Chell {
+func New(opts ...Option) (*Chell, error) {
 	chell := &Chell{}
 	for _, opt := range opts {
-		opt(chell)
+		err := opt(chell)
+		if err != nil {
+			return nil, errors.WithStack(err)
+		}
 	}
 
 	if chell.workerPoolSize <= 0 {
-		chell.workerPoolSize = runtime.NumCPU()
+		chell.workerPoolSize = 10
 	}
 
-	// TODO: custom worker may be required.
-	chell.workerPool = tunny.NewFunc(chell.workerPoolSize, func(i interface{}) interface{} {
-		return ""
-	})
-
-	return chell
+	return chell, nil
 }
 
 func Dump(dst, src interface{}, opts ...Option) error {
@@ -66,8 +44,11 @@ func Dump(dst, src interface{}, opts ...Option) error {
 }
 
 func DumpWithContext(ctx context.Context, dst, src interface{}, opts ...Option) error {
-	chell := New(opts...)
-	defer chell.Close()
+	chell, err := New(opts...)
+	if err != nil {
+		return errors.WithStack(err)
+	}
+
 	return chell.DumpWithContext(ctx, dst, src)
 }
 
@@ -76,10 +57,6 @@ func (c *Chell) Dump(dst, src interface{}) error {
 }
 
 func (c *Chell) DumpWithContext(ctx context.Context, dst, src interface{}) error {
-	if c.err != nil {
-		return errors.WithStack(c.err)
-	}
-
 	rv := reflect.ValueOf(dst)
 	if rv.Kind() != reflect.Ptr {
 		return errors.New("dst must be a pointer")
@@ -98,18 +75,16 @@ func (c *Chell) DumpWithContext(ctx context.Context, dst, src interface{}) error
 	}
 }
 
-// Close closes the inner dumping goroutine pool and terminate all the dumping workers.
-func (c *Chell) Close() {
-	if c.workerPool != nil {
-		c.workerPool.Close()
-	}
-}
-
 func (c *Chell) dump(ctx context.Context, dst *Schema, src interface{}) error {
-	if err := c.dumpSyncFields(ctx, dst, src); err != nil {
-		return err
+	err := c.dumpSyncFields(ctx, dst, src)
+	if err != nil {
+		return errors.WithStack(err)
 	}
-	return c.dumpAsyncFields(ctx, dst, src)
+	err = c.dumpAsyncFields(ctx, dst, src)
+	if err != nil {
+		return errors.WithStack(err)
+	}
+	return err
 }
 
 func (c *Chell) dumpSyncFields(ctx context.Context, dst *Schema, src interface{}) error {
@@ -134,6 +109,7 @@ func (c *Chell) dumpAsyncFields(ctx context.Context, dst *Schema, src interface{
 	logger.Debugln("[portal.chell] dump async fields")
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
+
 	type Item struct {
 		field *Field
 		data  interface{}
@@ -141,36 +117,50 @@ func (c *Chell) dumpAsyncFields(ctx context.Context, dst *Schema, src interface{
 	}
 
 	var wg sync.WaitGroup
-	items := make(chan *Item, MinInt(len(dst.AsyncFields()), 10))
+	items := make(chan *Item, MinInt(len(dst.AsyncFields()), c.workerPoolSize))
 
 	for _, field := range dst.AsyncFields() {
 		wg.Add(1)
 		go func(f *Field) {
 			defer wg.Done()
-			logger.Debugf("[portal.chell] processing sync field '%s'", f)
-			val, err := dst.FieldValueFromData(ctx, f, src)
-			logger.Debugf("[portal.chell] sync field '%s' got value '%v'", f, val)
-			items <- &Item{f, val, err}
+
+			logger.Debugf("[portal.chell] processing async field '%s'", f)
+			select {
+			case <-ctx.Done():
+				logger.Debugf("[portal.chell] processing async field '%s' failed: cancelling signal received", f)
+			default:
+				val, err := dst.FieldValueFromData(ctx, f, src)
+				logger.Debugf("[portal.chell] async field '%s' got value '%v'", f, val)
+				items <- &Item{f, val, err}
+			}
+
 		}(field)
 	}
 
 	go func() {
-		wg.Wait()
+		select {
+		case <-ctx.Done():
+		default:
+			wg.Wait()
+		}
 		close(items)
 	}()
 
+	var err error
 	for item := range items {
 		if item.err != nil {
-			return item.err
+			cancel()
+			err = item.err
 		}
 
-		err := c.dumpField(ctx, item.field, item.data)
-		if err != nil {
-			return err
+		e := c.dumpField(ctx, item.field, item.data)
+		if e != nil {
+			cancel()
+			err = e
 		}
 	}
 
-	return nil
+	return err
 }
 
 func (c *Chell) dumpField(ctx context.Context, field *Field, value interface{}) error {
@@ -270,7 +260,7 @@ func (c *Chell) dumpMany(ctx context.Context, dst, src interface{}, onlyFields, 
 		err       error
 	}
 
-	items := make(chan *Item, MinInt(rv.Len(), 10))
+	items := make(chan *Item, MinInt(rv.Len(), c.workerPoolSize))
 
 	for i := 0; i < rv.Len(); i++ {
 		wg.Add(1)
@@ -312,22 +302,22 @@ func (c *Chell) dumpMany(ctx context.Context, dst, src interface{}, onlyFields, 
 	return nil
 }
 
-func (c *Chell) Only(fields ...string) *Chell {
+func (c *Chell) SetOnlyFields(fields ...string) error {
 	filters, err := ParseFilters(fields)
 	if err != nil {
-		c.err = err
+		return errors.WithStack(err)
 	} else {
 		c.onlyFieldFilters = filters
 	}
-	return c
+	return nil
 }
 
-func (c *Chell) Exclude(fields ...string) *Chell {
+func (c *Chell) SetExcludeFields(fields ...string) error {
 	filters, err := ParseFilters(fields)
 	if err != nil {
-		c.err = err
+		return errors.WithStack(err)
 	} else {
 		c.excludeFieldFilters = filters
 	}
-	return c
+	return nil
 }

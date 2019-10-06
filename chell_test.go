@@ -163,17 +163,17 @@ func TestChellDumpOk(t *testing.T) {
 	}
 
 	var taskSchema TaskSchema
-	chell := New().Only("Title", "SimpleUser")
+	chell, _ := New()
+	_ = chell.SetOnlyFields("Title", "SimpleUser")
 	err := chell.Dump(&taskSchema, &task)
-	chell.Close()
 	assert.Nil(t, err)
 	data, _ := json.Marshal(taskSchema)
 	assert.Equal(t, `{"title":"Finish your jobs.","simple_user":{"name":"user:1"}}`, string(data))
 
-	chell = New().Exclude("Description", "ID", "User[Name,Notifications[ID,Content],AnotherNotifications], SimpleUser")
+	chell, _ = New()
+	_ = chell.SetExcludeFields("Description", "ID", "User[Name,Notifications[ID,Content],AnotherNotifications], SimpleUser")
 	var taskSchema2 TaskSchema
 	err = chell.Dump(&taskSchema2, &task)
-	chell.Close()
 	assert.Nil(t, err)
 	data, _ = json.Marshal(taskSchema2)
 	assert.Equal(t, `{"title":"Finish your jobs.","user":{"id":"1","notifications":[{"title":"title_0"}]}}`, string(data))

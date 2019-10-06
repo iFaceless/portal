@@ -1,8 +1,10 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
+	"time"
 
 	"github.com/ifaceless/portal"
 
@@ -11,7 +13,7 @@ import (
 )
 
 func main() {
-	portal.SetDebug(false)
+	portal.SetDebug(true)
 	task := model.TaskModel{
 		ID:     1,
 		UserID: 1,
@@ -22,21 +24,24 @@ func main() {
 	printFullFields(&task)
 
 	// {"title":"Finish your jobs.","simple_user":{"name":"user:1"}}
-	printWithOnlyFields(&task, "Title", "SimpleUser")
+	//printWithOnlyFields(&task, "Title", "SimpleUser")
 
 	// {"id":"1","user":{"id":"1","notifications":[{"id":"0"}],"another_notifications":[{"title":"title_0"}]},"simple_user":{"name":"user:1"}}
-	printWithOnlyFields(&task, "ID", "User[ID,Notifications[ID],AnotherNotifications[Title]]", "SimpleUser")
+	//printWithOnlyFields(&task, "ID", "User[ID,Notifications[ID],AnotherNotifications[Title]]", "SimpleUser")
 
 	// [{"id":"0","title":"Task #1","user":{"name":"user:100"}},{"id":"1","title":"Task #2","user":{"name":"user:101"}}]
-	printMany()
+	//printMany()
 
 	// {"title":"Finish your jobs.","user":{"id":"1","notifications":[{"title":"title_0"}]}}
-	printWithExcludeFields(&task, "Description", "ID", "User[Name,Notifications[ID,Content],AnotherNotifications], SimpleUser")
+	//printWithExcludeFields(&task, "Description", "ID", "User[Name,Notifications[ID,Content],AnotherNotifications], SimpleUser")
 }
 
 func printFullFields(task *model.TaskModel) {
 	var taskSchema schema.TaskSchema
-	err := portal.Dump(&taskSchema, task)
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Millisecond)
+	defer cancel()
+
+	err := portal.DumpWithContext(ctx, &taskSchema, task)
 	if err != nil {
 		panic(err)
 	}
