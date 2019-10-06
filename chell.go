@@ -119,13 +119,11 @@ func (c *Chell) dumpAsyncFields(ctx context.Context, dst *Schema, src interface{
 
 	for item := range items {
 		if item.err != nil {
-			cancel()
 			return item.err
 		}
 
 		err := c.dumpField(ctx, item.field, item.data)
 		if err != nil {
-			cancel()
 			return err
 		}
 	}
@@ -273,30 +271,21 @@ func (c *Chell) dumpMany(ctx context.Context, dst, src interface{}, onlyFields, 
 }
 
 func (c *Chell) Only(fields ...string) *Chell {
-	cpy := c.clone()
 	filters, err := ParseFilters(fields)
 	if err != nil {
-		cpy.err = err
+		c.err = err
 	} else {
-		cpy.onlyFieldFilters = filters
+		c.onlyFieldFilters = filters
 	}
-	return cpy
+	return c
 }
 
 func (c *Chell) Exclude(fields ...string) *Chell {
-	cpy := c.clone()
 	filters, err := ParseFilters(fields)
 	if err != nil {
-		cpy.err = err
+		c.err = err
 	} else {
-		cpy.excludeFieldFilters = filters
+		c.excludeFieldFilters = filters
 	}
-	return cpy
-}
-
-func (c *Chell) clone() *Chell {
-	return &Chell{
-		onlyFieldFilters:    c.onlyFieldFilters,
-		excludeFieldFilters: c.excludeFieldFilters,
-	}
+	return c
 }
