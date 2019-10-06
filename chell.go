@@ -3,24 +3,62 @@ package portal
 import (
 	"context"
 	"reflect"
+	"runtime"
 	"sync"
+	"time"
 
+	"github.com/Jeffail/tunny"
 	"github.com/pkg/errors"
 )
 
-var (
-	ConcurrentDumpingPoolSize = 10
-)
-
+// Chell manages the dumping state and a worker pool.
 type Chell struct {
 	err error
 
 	onlyFieldFilters    map[int][]*FilterNode
 	excludeFieldFilters map[int][]*FilterNode
+
+	// workerPool is a fixed-size goroutine pool to
+	// fill data into schema fields concurrently.
+	//
+	// Since the number of incoming requests are unknown,
+	// we must limit the spawned goroutines to avoid
+	// consuming too many resources.
+	workerPool *tunny.Pool
+
+	// workerPoolSize is default to `runtime.NumCPU()`.
+	workerPoolSize int
+
+	// workerTimeout tells the worker how long to wait
+	// before getting the processed result.
+	// If the worker timeout occurs, Chell will get an
+	// error: `ErrJobTimedOut`.
+	// Default timeout is '0', which means the worker will
+	// wait until the processed result coming out.
+	workerTimeout time.Duration
 }
 
-func New() *Chell {
-	return &Chell{}
+// New creates a new Chell instance with a worker pool waiting to be feed.
+// After dumping process finished, you're responsible to call the `Close()`
+// method to release resource occupied.
+// It's highly recommended to call function `portal.Dump()` or
+// `portal.DumpWithContext()` directly.
+func New(opts ...Option) *Chell {
+	chell := &Chell{}
+	for _, opt := range opts {
+		opt(chell)
+	}
+
+	if chell.workerPoolSize <= 0 {
+		chell.workerPoolSize = runtime.NumCPU()
+	}
+
+	// TODO: custom worker may be required.
+	chell.workerPool = tunny.NewFunc(chell.workerPoolSize, func(i interface{}) interface{} {
+		return ""
+	})
+
+	return chell
 }
 
 func Dump(dst, src interface{}, opts ...Option) error {
@@ -28,11 +66,8 @@ func Dump(dst, src interface{}, opts ...Option) error {
 }
 
 func DumpWithContext(ctx context.Context, dst, src interface{}, opts ...Option) error {
-	chell := New()
-	for _, opt := range opts {
-		opt(chell)
-	}
-
+	chell := New(opts...)
+	defer chell.Close()
 	return chell.DumpWithContext(ctx, dst, src)
 }
 
@@ -60,6 +95,13 @@ func (c *Chell) DumpWithContext(ctx context.Context, dst, src interface{}) error
 		toSchema.SetOnlyFields(ExtractFilterNodeNames(c.onlyFieldFilters[0], nil)...)
 		toSchema.SetExcludeFields(ExtractFilterNodeNames(c.excludeFieldFilters[0], &ExtractOption{ignoreNodeWithChildren: true})...)
 		return c.dump(IncrDumpDepthContext(ctx), toSchema, src)
+	}
+}
+
+// Close closes the inner dumping goroutine pool and terminate all the dumping workers.
+func (c *Chell) Close() {
+	if c.workerPool != nil {
+		c.workerPool.Close()
 	}
 }
 
@@ -99,7 +141,7 @@ func (c *Chell) dumpAsyncFields(ctx context.Context, dst *Schema, src interface{
 	}
 
 	var wg sync.WaitGroup
-	items := make(chan *Item, MinInt(len(dst.AsyncFields()), ConcurrentDumpingPoolSize))
+	items := make(chan *Item, MinInt(len(dst.AsyncFields()), 10))
 
 	for _, field := range dst.AsyncFields() {
 		wg.Add(1)
@@ -228,7 +270,7 @@ func (c *Chell) dumpMany(ctx context.Context, dst, src interface{}, onlyFields, 
 		err       error
 	}
 
-	items := make(chan *Item, MinInt(rv.Len(), ConcurrentDumpingPoolSize))
+	items := make(chan *Item, MinInt(rv.Len(), 10))
 
 	for i := 0; i < rv.Len(); i++ {
 		wg.Add(1)

@@ -1,5 +1,7 @@
 package portal
 
+import "time"
+
 type Option func(c *Chell)
 
 func Only(fields ...string) Option {
@@ -21,5 +23,19 @@ func Exclude(fields ...string) Option {
 		} else {
 			c.excludeFieldFilters = filters
 		}
+	}
+}
+
+func WorkerPoolSize(size int) Option {
+	return func(c *Chell) {
+		if size > 0 {
+			c.workerPoolSize = size
+		}
+	}
+}
+
+func WorkerTimeout(d time.Duration) Option {
+	return func(c *Chell) {
+		c.workerTimeout = d
 	}
 }
