@@ -25,19 +25,10 @@ func main() {
 		Title:  "Finish your jobs.",
 	}
 
-	// {"id":"1","title":"Finish your jobs.","description":"Custom description","user":{"id":"1","name":"user:1","notifications":[{"id":"0","title":"title_0","content":"content_0"}],"another_notifications":[{"id":"0","title":"title_0","content":"content_0"}]},"simple_user":{"name":"user:1"}}
 	printFullFields(&task)
-
-	// {"title":"Finish your jobs.","simple_user":{"name":"user:1"}}
 	printWithOnlyFields(&task, "Title", "SimpleUser")
-
-	// {"id":"1","user":{"id":"1","notifications":[{"id":"0"}],"another_notifications":[{"title":"title_0"}]},"simple_user":{"name":"user:1"}}
 	printWithOnlyFields(&task, "ID", "User[ID,Notifications[ID],AnotherNotifications[Title]]", "SimpleUser")
-
-	// [{"id":"0","title":"Task #1","user":{"name":"user:100"}},{"id":"1","title":"Task #2","user":{"name":"user:101"}}]
 	printMany()
-
-	// {"title":"Finish your jobs.","user":{"id":"1","notifications":[{"title":"title_0"}]}}
 	printWithExcludeFields(&task, "Description", "ID", "User[Name,Notifications[ID,Content],AnotherNotifications], SimpleUser")
 	fmt.Printf("elapsed: %.1f ms\n", time.Since(start).Seconds()*1000)
 }
