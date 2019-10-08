@@ -19,8 +19,7 @@ var (
 	// responsible for processing schema fields asynchronously.
 	// Note that each dumping level gets a worker pool to avoid
 	// dead lock.
-	levelWorkerPoolMap     = make(map[int]*ants.PoolWithFunc)
-	lockLevelWorkerPoolMap sync.Mutex
+	levelWorkerPoolMap sync.Map
 )
 
 var (
@@ -55,20 +54,21 @@ func submitJobs(ctx context.Context, pf processFunc, payloads ...interface{}) (<
 	defer cancel()
 
 	level := dumpDepthFromContext(ctx)
-	workerPool, ok := levelWorkerPoolMap[level]
-	if !ok {
-		lockLevelWorkerPoolMap.Lock()
+
+	var workerPool *ants.PoolWithFunc
+	pool, ok := levelWorkerPoolMap.Load(level)
+	if ok {
+		workerPool = pool.(*ants.PoolWithFunc)
+	} else {
 		logger.Debugf("[portal.pool] worker pool with level %d not found, try to create a new one", level)
 		pool, err := ants.NewPoolWithFunc(1, processRequest)
 		if err != nil {
-			lockLevelWorkerPoolMap.Unlock()
 			return nil, errors.WithStack(err)
 		}
 
-		levelWorkerPoolMap[level] = pool
+		levelWorkerPoolMap.Store(level, pool)
 		workerPool = pool
 		SetMaxPoolSize(maxWorkerPoolSize)
-		lockLevelWorkerPoolMap.Unlock()
 	}
 
 	resultChan := make(chan *jobResult, len(payloads))
@@ -113,28 +113,43 @@ func SetMaxPoolSize(size int) {
 	}
 
 	maxWorkerPoolSize = size
-	if len(levelWorkerPoolMap) == 0 {
+
+	var length int
+	levelWorkerPoolMap.Range(func(key, value interface{}) bool {
+		length++
+		return true
+	})
+
+	if length == 0 {
 		return
 	}
 
 	// make sure capacity is valid.
-	capacity := size / len(levelWorkerPoolMap)
+	capacity := size / length
 	if capacity == 0 {
 		capacity = 1
 	}
 
-	for level, pool := range levelWorkerPoolMap {
-		logger.Debugf("[portal.pool] tune pool.%d capacity to %d", level, capacity)
-		pool.Tune(capacity)
-	}
+	levelWorkerPoolMap.Range(func(level, value interface{}) bool {
+		pool, ok := value.(*ants.PoolWithFunc)
+		if ok {
+			logger.Debugf("[portal.pool] tune pool.%d capacity to %d", level.(int), capacity)
+			pool.Tune(capacity)
+		}
+		return true
+	})
 }
 
 // CleanUp releases the global worker pool.
 // You should call this function only once before the main goroutine exits.
 func CleanUp() {
-	for _, pool := range levelWorkerPoolMap {
-		pool.Release()
-	}
+	levelWorkerPoolMap.Range(func(key, value interface{}) bool {
+		pool, ok := value.(*ants.PoolWithFunc)
+		if ok {
+			pool.Release()
+		}
+		return true
+	})
 }
 
 func processRequest(request interface{}) {
@@ -163,5 +178,5 @@ func init() {
 		panic(ErrFailedToInitWorkerPool)
 	}
 
-	levelWorkerPoolMap[0] = p
+	levelWorkerPoolMap.Store(0, p)
 }

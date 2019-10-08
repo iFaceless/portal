@@ -11,9 +11,8 @@ import (
 )
 
 var (
-	defaultTagName             = "portal"
-	cachedFieldTagSettings     = make(map[string]map[string]string)
-	lockCachedFieldTagSettings sync.RWMutex
+	defaultTagName         = "portal"
+	cachedFieldTagSettings sync.Map
 )
 
 type schemaField struct {
@@ -25,15 +24,16 @@ type schemaField struct {
 
 func newField(schema *schema, field *structs.Field) *schemaField {
 	tagStr := field.Tag(defaultTagName)
-	lockCachedFieldTagSettings.RLock()
-	settings, ok := cachedFieldTagSettings[tagStr]
-	lockCachedFieldTagSettings.RUnlock()
-	if !ok {
-		lockCachedFieldTagSettings.Lock()
-		result := parseTagSettings(tagStr)
-		cachedFieldTagSettings[tagStr] = result
+
+	var settings map[string]string
+	cachedSettings, ok := cachedFieldTagSettings.Load(tagStr)
+	if ok {
+		result, _ := cachedSettings.(map[string]string)
 		settings = result
-		lockCachedFieldTagSettings.Unlock()
+	} else {
+		result := parseTagSettings(tagStr)
+		cachedFieldTagSettings.Store(tagStr, result)
+		settings = result
 	}
 
 	return &schemaField{

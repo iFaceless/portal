@@ -14,7 +14,7 @@ var (
 )
 
 var (
-	parsedFilterResultMap sync.Map
+	cachedFilterResultMap sync.Map
 )
 
 type filterNode struct {
@@ -75,9 +75,10 @@ func parseFilterString(s string) (map[int][]*filterNode, error) {
 		return nil, ErrPrefixIsNotBracket
 	}
 
-	cachedResult, ok := parsedFilterResultMap.Load(s)
+	cachedResult, ok := cachedFilterResultMap.Load(s)
 	if ok {
-		return cachedResult.(map[int][]*filterNode), nil
+		rv, _ := cachedResult.(map[int][]*filterNode)
+		return rv, nil
 	}
 
 	// don't care about non-ascii chars.
@@ -88,7 +89,7 @@ func parseFilterString(s string) (map[int][]*filterNode, error) {
 	}
 
 	result := doParse(filterInBytes)
-	parsedFilterResultMap.Store(s, result)
+	cachedFilterResultMap.Store(s, result)
 	return result, nil
 }
 
