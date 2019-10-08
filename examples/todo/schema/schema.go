@@ -3,6 +3,8 @@ package schema
 import (
 	"time"
 
+	"github.com/ifaceless/portal/field"
+
 	"github.com/ifaceless/portal/examples/todo/model"
 )
 
@@ -14,10 +16,12 @@ type NotiSchema struct {
 }
 
 type UserSchema struct {
-	ID                   string        `json:"id,omitempty"`
-	Name                 string        `json:"name,omitempty" portal:"attr:Fullname"`
-	Notifications        []*NotiSchema `json:"notifications,omitempty" portal:"nested"`
-	AnotherNotifications []*NotiSchema `json:"another_notifications,omitempty" portal:"nested;attr:Notifications"`
+	ID                   string           `json:"id,omitempty"`
+	Name                 string           `json:"name,omitempty" portal:"attr:Fullname"`
+	Notifications        []*NotiSchema    `json:"notifications,omitempty" portal:"nested"`
+	AnotherNotifications []*NotiSchema    `json:"another_notifications,omitempty" portal:"nested;attr:Notifications"`
+	CreatedAt            *field.Timestamp `json:"created_at,omitempty"`
+	UpdatedAt            *field.Timestamp `json:"updated_at,omitempty"`
 }
 
 type TaskSchema struct {

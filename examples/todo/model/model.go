@@ -2,6 +2,7 @@ package model
 
 import (
 	"fmt"
+	"time"
 )
 
 type NotificationModel struct {
@@ -16,6 +17,14 @@ type UserModel struct {
 
 func (u *UserModel) Fullname() string {
 	return fmt.Sprintf("user:%d", u.ID)
+}
+
+func (u *UserModel) CreatedAt() time.Time {
+	return time.Now()
+}
+
+func (u *UserModel) UpdatedAt() time.Time {
+	return time.Now()
 }
 
 func (u *UserModel) Notifications() (result []*NotificationModel) {
