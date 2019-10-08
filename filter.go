@@ -14,33 +14,32 @@ var (
 )
 
 var (
-	cachedParseResultMap = make(map[string]map[int][]*FilterNode)
-	lock                 sync.Mutex
+	parsedFilterResultMap sync.Map
 )
 
-type FilterNode struct {
+type filterNode struct {
 	Name     string        `json:"name"`
-	Parent   *FilterNode   `json:"-"`
-	Children []*FilterNode `json:"children"`
+	Parent   *filterNode   `json:"-"`
+	Children []*filterNode `json:"children"`
 }
 
-func (node *FilterNode) String() string {
+func (node *filterNode) String() string {
 	data, _ := json.MarshalIndent(node, "", "  ")
 	return string(data)
 }
 
-type ExtractOption struct {
+type extractOption struct {
 	ignoreNodeWithChildren bool
 	queryByParentName      string
 }
 
-func ExtractFilterNodeNames(nodes []*FilterNode, opt *ExtractOption) []string {
+func extractFilterNodeNames(nodes []*filterNode, opt *extractOption) []string {
 	if len(nodes) == 0 {
 		return nil
 	}
 
 	if opt == nil {
-		opt = &ExtractOption{}
+		opt = &extractOption{}
 	}
 
 	names := make([]string, 0, len(nodes))
@@ -58,15 +57,15 @@ func ExtractFilterNodeNames(nodes []*FilterNode, opt *ExtractOption) []string {
 	return names
 }
 
-func ParseFilters(filters []string) (map[int][]*FilterNode, error) {
-	return ParseFilterString("[" + strings.Join(filters, ",") + "]")
+func parseFilters(filters []string) (map[int][]*filterNode, error) {
+	return parseFilterString("[" + strings.Join(filters, ",") + "]")
 }
 
-// ParseFilterString parses filter string to a filter tree (with extra levels).
+// parseFilterString parses filter string to a filter tree (with extra levels).
 // Example input:
 // 1. [speaker[id,name]]
 // 2. [speaker[id,name,vip_info[type,is_active]]]
-func ParseFilterString(s string) (map[int][]*FilterNode, error) {
+func parseFilterString(s string) (map[int][]*filterNode, error) {
 	s = strings.TrimSpace(s)
 	if s == "" {
 		return nil, nil
@@ -76,35 +75,31 @@ func ParseFilterString(s string) (map[int][]*FilterNode, error) {
 		return nil, ErrPrefixIsNotBracket
 	}
 
-	cachedResult, ok := cachedParseResultMap[s]
+	cachedResult, ok := parsedFilterResultMap.Load(s)
 	if ok {
-		return cachedResult, nil
+		return cachedResult.(map[int][]*filterNode), nil
 	}
 
-	lock.Lock()
 	// don't care about non-ascii chars.
 	filterInBytes := []byte(s)
 	err := checkBracketPairs(filterInBytes)
 	if err != nil {
-		lock.Unlock()
 		return nil, errors.WithStack(err)
 	}
 
 	result := doParse(filterInBytes)
-	cachedParseResultMap[s] = result
-	lock.Unlock()
-
+	parsedFilterResultMap.Store(s, result)
 	return result, nil
 }
 
 func checkBracketPairs(s []byte) error {
-	stack := NewStack()
+	stack := newStack()
 	for _, c := range s {
 		switch c {
 		case '[':
-			stack.Push(c)
+			stack.push(c)
 		case ']':
-			x, err := stack.Pop()
+			x, err := stack.pop()
 			if err != nil {
 				return ErrUnmatchedBrackets
 			}
@@ -119,7 +114,7 @@ func checkBracketPairs(s []byte) error {
 		}
 	}
 
-	if stack.Size() > 0 {
+	if stack.size() > 0 {
 		return ErrUnmatchedBrackets
 	}
 
@@ -128,25 +123,25 @@ func checkBracketPairs(s []byte) error {
 
 // doParse parses filter string to a filter tree.
 // Note: stupid & ugly~
-func doParse(s []byte) map[int][]*FilterNode {
+func doParse(s []byte) map[int][]*filterNode {
 	var (
 		wordBuf            []byte
-		levelNodesMap      = make(map[int][]*FilterNode)
-		levelParentNodeMap = map[int]*FilterNode{-1: nil}
+		levelNodesMap      = make(map[int][]*filterNode)
+		levelParentNodeMap = map[int]*filterNode{-1: nil}
 		level              = -1
 	)
 
-	appendNodes := func() *FilterNode {
+	appendNodes := func() *filterNode {
 		if len(wordBuf) == 0 {
 			return nil
 		}
 
 		nthLevelNodes, ok := levelNodesMap[level]
 		if !ok || nthLevelNodes == nil {
-			nthLevelNodes = make([]*FilterNode, 0)
+			nthLevelNodes = make([]*filterNode, 0)
 		}
 
-		node := &FilterNode{Name: string(wordBuf), Parent: levelParentNodeMap[level]}
+		node := &filterNode{Name: string(wordBuf), Parent: levelParentNodeMap[level]}
 		if node.Parent != nil {
 			node.Parent.Children = append(node.Parent.Children, node)
 		}

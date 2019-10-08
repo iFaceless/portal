@@ -4,19 +4,19 @@ import "github.com/pkg/errors"
 
 var ErrStackIsEmpty = errors.New("stack is empty")
 
-type Stack struct {
+type stack struct {
 	elements []interface{}
 }
 
-func NewStack() *Stack {
-	return &Stack{}
+func newStack() *stack {
+	return &stack{}
 }
 
-func (stack *Stack) Size() int {
+func (stack *stack) size() int {
 	return len(stack.elements)
 }
 
-func (stack *Stack) Push(x interface{}) {
+func (stack *stack) push(x interface{}) {
 	if stack.elements == nil {
 		stack.elements = make([]interface{}, 0)
 	}
@@ -24,21 +24,21 @@ func (stack *Stack) Push(x interface{}) {
 	stack.elements = append(stack.elements, x)
 }
 
-func (stack *Stack) Top() (interface{}, error) {
-	if stack.Size() == 0 {
+func (stack *stack) top() (interface{}, error) {
+	if stack.size() == 0 {
 		return nil, ErrStackIsEmpty
 	}
 
-	return stack.elements[stack.Size()-1], nil
+	return stack.elements[stack.size()-1], nil
 }
 
-func (stack *Stack) Pop() (interface{}, error) {
-	if stack.Size() == 0 {
+func (stack *stack) pop() (interface{}, error) {
+	if stack.size() == 0 {
 		return nil, ErrStackIsEmpty
 	}
 
-	x := stack.elements[stack.Size()-1]
-	stack.elements = stack.elements[0 : stack.Size()-1]
+	x := stack.elements[stack.size()-1]
+	stack.elements = stack.elements[0 : stack.size()-1]
 
 	return x, nil
 }

@@ -12,8 +12,8 @@ func TestField_String(t *testing.T) {
 		Name string
 	}
 
-	schema := NewSchema(&FooSchema{})
-	f := NewField(schema, schema.Struct().Field("Name"))
+	schema := newSchema(&FooSchema{})
+	f := newField(schema, schema.innerStruct().Field("Name"))
 	assert.Equal(t, "FooSchema.Name", f.String())
 }
 
@@ -23,12 +23,12 @@ func TestField_IsRequired(t *testing.T) {
 		ID   string `portal:"required"`
 	}
 
-	schema := NewSchema(&FooSchema{})
-	f := NewField(schema, schema.Struct().Field("Name"))
-	assert.False(t, f.IsRequired())
+	schema := newSchema(&FooSchema{})
+	f := newField(schema, schema.innerStruct().Field("Name"))
+	assert.False(t, f.isRequired())
 
-	f = NewField(schema, schema.Struct().Field("ID"))
-	assert.True(t, f.IsRequired())
+	f = newField(schema, schema.innerStruct().Field("ID"))
+	assert.True(t, f.isRequired())
 }
 
 func TestField_IsNested(t *testing.T) {
@@ -38,12 +38,12 @@ func TestField_IsNested(t *testing.T) {
 		Bar  *BarSchema `portal:"nested"`
 	}
 
-	schema := NewSchema(&FooSchema{})
-	f := NewField(schema, schema.Struct().Field("Name"))
-	assert.False(t, f.IsNested())
+	schema := newSchema(&FooSchema{})
+	f := newField(schema, schema.innerStruct().Field("Name"))
+	assert.False(t, f.isNested())
 
-	f = NewField(schema, schema.Struct().Field("Bar"))
-	assert.True(t, f.IsNested())
+	f = newField(schema, schema.innerStruct().Field("Bar"))
+	assert.True(t, f.isNested())
 }
 
 func TestField_Many(t *testing.T) {
@@ -53,12 +53,12 @@ func TestField_Many(t *testing.T) {
 		Bars []*BarSchema
 	}
 
-	schema := NewSchema(&FooSchema{})
-	f := NewField(schema, schema.Struct().Field("Name"))
-	assert.False(t, f.Many())
+	schema := newSchema(&FooSchema{})
+	f := newField(schema, schema.innerStruct().Field("Name"))
+	assert.False(t, f.hasMany())
 
-	f = NewField(schema, schema.Struct().Field("Bars"))
-	assert.True(t, f.Many())
+	f = newField(schema, schema.innerStruct().Field("Bars"))
+	assert.True(t, f.hasMany())
 }
 
 func TestField_Method(t *testing.T) {
@@ -67,9 +67,9 @@ func TestField_Method(t *testing.T) {
 		Bar  string `portal:"meth:GetBar"`
 	}
 
-	schema := NewSchema(&FooSchema{})
-	f := NewField(schema, schema.Struct().Field("Bar"))
-	assert.Equal(t, "GetBar", f.Method())
+	schema := newSchema(&FooSchema{})
+	f := newField(schema, schema.innerStruct().Field("Bar"))
+	assert.Equal(t, "GetBar", f.method())
 }
 
 func TestField_HasMethod(t *testing.T) {
@@ -78,12 +78,12 @@ func TestField_HasMethod(t *testing.T) {
 		Bar  string `portal:"meth:GetBar"`
 	}
 
-	schema := NewSchema(&FooSchema{})
-	f := NewField(schema, schema.Struct().Field("Bar"))
-	assert.True(t, f.HasMethod())
+	schema := newSchema(&FooSchema{})
+	f := newField(schema, schema.innerStruct().Field("Bar"))
+	assert.True(t, f.hasMethod())
 
-	f = NewField(schema, schema.Struct().Field("Name"))
-	assert.False(t, f.HasMethod())
+	f = newField(schema, schema.innerStruct().Field("Name"))
+	assert.False(t, f.hasMethod())
 }
 
 func TestField_ChainingAttrs(t *testing.T) {
@@ -92,12 +92,12 @@ func TestField_ChainingAttrs(t *testing.T) {
 		Bazz string `portal:"attr:Bar.Bazz"`
 	}
 
-	schema := NewSchema(&FooSchema{})
-	f := NewField(schema, schema.Struct().Field("Bazz"))
-	assert.Equal(t, []string{"Bar", "Bazz"}, f.ChainingAttrs())
+	schema := newSchema(&FooSchema{})
+	f := newField(schema, schema.innerStruct().Field("Bazz"))
+	assert.Equal(t, []string{"Bar", "Bazz"}, f.chainingAttrs())
 
-	f = NewField(schema, schema.Struct().Field("Name"))
-	assert.Equal(t, []string(nil), f.ChainingAttrs())
+	f = newField(schema, schema.innerStruct().Field("Name"))
+	assert.Equal(t, []string(nil), f.chainingAttrs())
 }
 
 func TestField_HasChainingAttrs(t *testing.T) {
@@ -106,12 +106,12 @@ func TestField_HasChainingAttrs(t *testing.T) {
 		Bazz string `portal:"attr:Bar.Bazz"`
 	}
 
-	schema := NewSchema(&FooSchema{})
-	f := NewField(schema, schema.Struct().Field("Bazz"))
-	assert.True(t, f.HasChainingAttrs())
+	schema := newSchema(&FooSchema{})
+	f := newField(schema, schema.innerStruct().Field("Bazz"))
+	assert.True(t, f.hasChainingAttrs())
 
-	f = NewField(schema, schema.Struct().Field("Name"))
-	assert.False(t, f.HasChainingAttrs())
+	f = newField(schema, schema.innerStruct().Field("Name"))
+	assert.False(t, f.hasChainingAttrs())
 }
 
 func TestField_ConstValue(t *testing.T) {
@@ -120,14 +120,14 @@ func TestField_ConstValue(t *testing.T) {
 		Name string `portal:"const:foo"`
 	}
 
-	schema := NewSchema(&FooSchema{})
-	f := NewField(schema, schema.Struct().Field("Name"))
-	assert.Equal(t, "foo", f.Const())
-	assert.True(t, f.HasConst())
+	schema := newSchema(&FooSchema{})
+	f := newField(schema, schema.innerStruct().Field("Name"))
+	assert.Equal(t, "foo", f.constValue())
+	assert.True(t, f.hasConstValue())
 
-	f = NewField(schema, schema.Struct().Field("ID"))
-	assert.Equal(t, interface{}(nil), f.Const())
-	assert.False(t, f.HasConst())
+	f = newField(schema, schema.innerStruct().Field("ID"))
+	assert.Equal(t, interface{}(nil), f.constValue())
+	assert.False(t, f.hasConstValue())
 }
 
 func TestField_Async(t *testing.T) {
@@ -136,12 +136,12 @@ func TestField_Async(t *testing.T) {
 		Name string `portal:"async"`
 	}
 
-	schema := NewSchema(&FooSchema{})
-	f := NewField(schema, schema.Struct().Field("Name"))
-	assert.True(t, f.Async())
+	schema := newSchema(&FooSchema{})
+	f := newField(schema, schema.innerStruct().Field("Name"))
+	assert.True(t, f.async())
 
-	f = NewField(schema, schema.Struct().Field("ID"))
-	assert.False(t, f.Async())
+	f = newField(schema, schema.innerStruct().Field("ID"))
+	assert.False(t, f.async())
 }
 
 func TestField_NestedOnlyNames(t *testing.T) {
@@ -154,9 +154,9 @@ func TestField_NestedOnlyNames(t *testing.T) {
 		Bar  *BarSchema `portal:"only:Name"`
 	}
 
-	schema := NewSchema(&FooSchema{})
-	f := NewField(schema, schema.Struct().Field("Bar"))
-	assert.Equal(t, []string{"Name"}, f.NestedOnlyNames(nil))
+	schema := newSchema(&FooSchema{})
+	f := newField(schema, schema.innerStruct().Field("Bar"))
+	assert.Equal(t, []string{"Name"}, f.nestedOnlyNames(nil))
 }
 
 func TestField_NestedExcludeNames(t *testing.T) {
@@ -169,9 +169,9 @@ func TestField_NestedExcludeNames(t *testing.T) {
 		Bar  *BarSchema `portal:"exclude:Name"`
 	}
 
-	schema := NewSchema(&FooSchema{})
-	f := NewField(schema, schema.Struct().Field("Bar"))
-	assert.Equal(t, []string{"Name"}, f.NestedExcludeNames(nil))
+	schema := newSchema(&FooSchema{})
+	f := newField(schema, schema.innerStruct().Field("Bar"))
+	assert.Equal(t, []string{"Name"}, f.nestedExcludeNames(nil))
 }
 
 type Person struct {
@@ -197,23 +197,23 @@ func TestField_SetValue(t *testing.T) {
 		Ts2  Timestamp
 	}
 
-	schema := NewSchema(&BarSchema{})
-	f := NewField(schema, schema.Struct().Field("ID"))
-	assert.Nil(t, f.SetValue(10))
+	schema := newSchema(&BarSchema{})
+	f := newField(schema, schema.innerStruct().Field("ID"))
+	assert.Nil(t, f.setValue(10))
 	assert.Equal(t, "10", f.Value().(string))
 
-	f = NewField(schema, schema.Struct().Field("Name"))
-	assert.Nil(t, f.SetValue(&Person{Name: "foo"}))
+	f = newField(schema, schema.innerStruct().Field("Name"))
+	assert.Nil(t, f.setValue(&Person{Name: "foo"}))
 	assert.Equal(t, "foo", f.Value().(string))
 
-	f = NewField(schema, schema.Struct().Field("Ts"))
+	f = newField(schema, schema.innerStruct().Field("Ts"))
 
 	now := time.Now()
-	assert.Nil(t, f.SetValue(now))
+	assert.Nil(t, f.setValue(now))
 	assert.Equal(t, Timestamp(now.Unix()), *f.Value().(*Timestamp))
 
-	f = NewField(schema, schema.Struct().Field("Ts2"))
-	assert.Nil(t, f.SetValue(now))
+	f = newField(schema, schema.innerStruct().Field("Ts2"))
+	assert.Nil(t, f.setValue(now))
 	assert.Equal(t, Timestamp(now.Unix()), f.Value().(Timestamp))
 }
 
@@ -223,9 +223,9 @@ func BenchmarkNewField(b *testing.B) {
 		Name string `portal:"async;meth:GetName"`
 	}
 
-	schema := NewSchema(&FooSchema{})
+	schema := newSchema(&FooSchema{})
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		NewField(schema, schema.Struct().Field("Name"))
+		newField(schema, schema.innerStruct().Field("Name"))
 	}
 }

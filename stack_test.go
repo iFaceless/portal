@@ -9,33 +9,33 @@ import (
 func TestStack(t *testing.T) {
 	asserter := assert.New(t)
 
-	stack := NewStack()
-	asserter.Equal(0, stack.Size())
+	stack := newStack()
+	asserter.Equal(0, stack.size())
 
-	stack.Push(1)
-	stack.Push(2)
-	stack.Push(3)
-	asserter.Equal(3, stack.Size())
+	stack.push(1)
+	stack.push(2)
+	stack.push(3)
+	asserter.Equal(3, stack.size())
 
-	x, err := stack.Top()
+	x, err := stack.top()
 	asserter.Equal(3, x)
 	asserter.Nil(err)
 
-	x, err = stack.Pop()
+	x, err = stack.pop()
 	asserter.Equal(3, x)
 	asserter.Nil(err)
 
-	x, err = stack.Pop()
+	x, err = stack.pop()
 	asserter.Equal(2, x)
 	asserter.Nil(err)
 
-	x, err = stack.Pop()
+	x, err = stack.pop()
 	asserter.Equal(1, x)
 	asserter.Nil(err)
 
-	_, err = stack.Pop()
+	_, err = stack.pop()
 	asserter.Equal(ErrStackIsEmpty, err)
 
-	_, err = stack.Top()
+	_, err = stack.top()
 	asserter.Equal(ErrStackIsEmpty, err)
 }

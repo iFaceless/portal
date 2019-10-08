@@ -7,6 +7,7 @@ import (
 
 	"reflect"
 
+	"github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -28,15 +29,15 @@ func TestGetNestedValue_Ok(t *testing.T) {
 	ctx := context.TODO()
 
 	c := Car{"xixi"}
-	r, e := GetNestedValue(ctx, c, []string{"Name"})
+	r, e := nestedValue(ctx, c, []string{"Name"})
 	assert.Nil(t, e)
 	assert.Equal(t, "xixi", r.(string))
 
-	r, e = GetNestedValue(ctx, &c, []string{"Name"})
+	r, e = nestedValue(ctx, &c, []string{"Name"})
 	assert.Nil(t, e)
 	assert.Equal(t, "xixi", r.(string))
 
-	r, e = GetNestedValue(ctx, &c, []string{"Country", "Name"})
+	r, e = nestedValue(ctx, &c, []string{"Country", "Name"})
 	assert.Nil(t, e)
 	assert.Equal(t, "China", r.(string))
 }
@@ -44,15 +45,15 @@ func TestGetNestedValue_Ok(t *testing.T) {
 func TestGetNestedValue_Error(t *testing.T) {
 	ctx := context.TODO()
 
-	_, e := GetNestedValue(ctx, nil, []string{"Name"})
+	_, e := nestedValue(ctx, nil, []string{"Name"})
 	assert.EqualError(t, e, "object is nil")
 
 	var m = 1
-	_, e = GetNestedValue(ctx, &m, []string{"Name"})
+	_, e = nestedValue(ctx, &m, []string{"Name"})
 	assert.EqualError(t, e, "object must be a struct or a pointer to struct")
 
 	var c = Car{"foo"}
-	_, e = GetNestedValue(ctx, &c, []string{"What"})
+	_, e = nestedValue(ctx, &c, []string{"What"})
 	assert.EqualError(t, e, "method 'What' not found in 'Car'")
 }
 
@@ -60,10 +61,10 @@ type Foo struct{}
 
 func TestStructName(t *testing.T) {
 	asserter := assert.New(t)
-	asserter.Equal("Foo", StructName(Foo{}))
-	asserter.Equal("Foo", StructName(&Foo{}))
+	asserter.Equal("Foo", structName(Foo{}))
+	asserter.Equal("Foo", structName(&Foo{}))
 	asserter.PanicsWithValue("invalid struct type", func() {
-		StructName("12")
+		structName("12")
 	})
 }
 
@@ -72,16 +73,16 @@ func TestAreIdenticalType(t *testing.T) {
 
 	foo1 := &Foo{}
 	foo2 := &Foo{}
-	asserter.True(Convertible(foo1, foo2))
-	asserter.False(Convertible(foo1, Foo{}))
+	asserter.True(convertible(foo1, foo2))
+	asserter.False(convertible(foo1, Foo{}))
 }
 
 func TestIsNil(t *testing.T) {
 	asserter := assert.New(t)
-	asserter.True(IsNil(nil))
+	asserter.True(isNil(nil))
 
 	foo := (*Foo)(nil)
-	asserter.True(IsNil(foo))
+	asserter.True(isNil(foo))
 }
 
 type Book struct {
@@ -114,42 +115,42 @@ func TestInvokeMethod(t *testing.T) {
 	ctx := context.TODO()
 	ctx = context.WithValue(ctx, "key", "hello, world")
 
-	ret, err := InvokeMethod(ctx, book, "ShortName")
+	ret, err := invokeStructMethod(ctx, book, "ShortName")
 	assert.Nil(t, err)
 	assert.Equal(t, "Test", ret)
 
-	ret, err = InvokeMethod(ctx, book, "FullName")
+	ret, err = invokeStructMethod(ctx, book, "FullName")
 	assert.Nil(t, err)
 	assert.Equal(t, "Prefix Test", ret)
 
-	ret, err = InvokeMethod(ctx, &book, "ShortName")
+	ret, err = invokeStructMethod(ctx, &book, "ShortName")
 	assert.Nil(t, err)
 	assert.Equal(t, "Test", ret)
 
-	ret, err = InvokeMethod(ctx, &book, "FullName")
+	ret, err = invokeStructMethod(ctx, &book, "FullName")
 	assert.Nil(t, err)
 	assert.Equal(t, "Prefix Test", ret)
 
-	ret, err = InvokeMethod(ctx, book, "AddBook", "Book 2")
+	ret, err = invokeStructMethod(ctx, book, "AddBook", "Book 2")
 	assert.Nil(t, err)
 	assert.Equal(t, "Add 'Book 2' ok", ret)
 
-	ret, err = InvokeMethod(ctx, book, "GetContextKey")
+	ret, err = invokeStructMethod(ctx, book, "GetContextKey")
 	assert.Nil(t, err)
 	assert.Equal(t, "hello, world", ret)
 
-	ret, err = InvokeMethod(ctx, book, "Plus", 100)
+	ret, err = invokeStructMethod(ctx, book, "Plus", 100)
 	assert.Nil(t, err)
 	assert.Equal(t, 200, ret)
 
-	ret, err = InvokeMethod(ctx, &book, "MethodNotFound")
+	ret, err = invokeStructMethod(ctx, &book, "MethodNotFound")
 	assert.Errorf(t, err, "method 'MethodNotFound' not found in 'Book'")
 
-	_, err = InvokeMethod(ctx, &book, "Plus")
+	_, err = invokeStructMethod(ctx, &book, "Plus")
 	assert.NotNil(t, err)
 	assert.Equal(t, "method 'Plus' must has minimum 2 params: 1", err.Error())
 
-	_, err = InvokeMethod(ctx, &book, "Plus", 1, 2)
+	_, err = invokeStructMethod(ctx, &book, "Plus", 1, 2)
 	assert.NotNil(t, err)
 	assert.Equal(t, "method 'Plus' must has 2 params: 3", err.Error())
 }
@@ -160,7 +161,7 @@ func BenchmarkInvokeMethod(b *testing.B) {
 
 	book := Book{name: "Test"}
 	for i := 0; i < b.N; i++ {
-		_, _ = InvokeMethod(context.TODO(), book, "FullName")
+		_, _ = invokeStructMethod(context.TODO(), book, "FullName")
 	}
 }
 
@@ -168,21 +169,71 @@ func TestIndirectStructType(t *testing.T) {
 	type Fruit struct{}
 
 	fruitType := reflect.TypeOf(Fruit{})
-	assert.Equal(t, fruitType, IndirectStructTypeP(reflect.TypeOf(Fruit{})))
-	assert.Equal(t, fruitType, IndirectStructTypeP(reflect.TypeOf(&Fruit{})))
-	assert.Equal(t, fruitType, IndirectStructTypeP(reflect.TypeOf([]Fruit{})))
+	assert.Equal(t, fruitType, indirectStructTypeP(reflect.TypeOf(Fruit{})))
+	assert.Equal(t, fruitType, indirectStructTypeP(reflect.TypeOf(&Fruit{})))
+	assert.Equal(t, fruitType, indirectStructTypeP(reflect.TypeOf([]Fruit{})))
 
 	var fruits []*Fruit
-	assert.Equal(t, fruitType, IndirectStructTypeP(reflect.TypeOf(fruits)))
-	assert.Equal(t, fruitType, IndirectStructTypeP(reflect.TypeOf(&fruits)))
+	assert.Equal(t, fruitType, indirectStructTypeP(reflect.TypeOf(fruits)))
+	assert.Equal(t, fruitType, indirectStructTypeP(reflect.TypeOf(&fruits)))
 
 	var fruits2 []Fruit
-	assert.Equal(t, fruitType, IndirectStructTypeP(reflect.TypeOf(fruits2)))
-	assert.Equal(t, fruitType, IndirectStructTypeP(reflect.TypeOf(&fruits2)))
+	assert.Equal(t, fruitType, indirectStructTypeP(reflect.TypeOf(fruits2)))
+	assert.Equal(t, fruitType, indirectStructTypeP(reflect.TypeOf(&fruits2)))
 }
 
-func TestMinInt(t *testing.T) {
-	assert.Equal(t, 2, MinInt(2, 3))
-	assert.Equal(t, 2, MinInt(3, 2))
-	assert.Equal(t, 2, MinInt(2, 2))
+func TestInnerStructType(t *testing.T) {
+	type Foo struct {
+		Name string
+	}
+
+	typ, _ := innerStructType(reflect.TypeOf(Foo{}))
+	assert.Equal(t, reflect.TypeOf(Foo{}), typ)
+
+	var foo Foo
+	typ, _ = innerStructType(reflect.TypeOf(&foo))
+	assert.Equal(t, reflect.TypeOf(Foo{}), typ)
+
+	var foo2 *Foo
+	typ, _ = innerStructType(reflect.TypeOf(&foo2))
+	assert.Equal(t, reflect.TypeOf(Foo{}), typ)
+}
+
+func TestInnerStructTypeError(t *testing.T) {
+	expectedError := errors.New("failed to get inner struct type")
+
+	var a = 100
+	_, err := innerStructType(reflect.TypeOf(a))
+	assert.NotNil(t, err)
+	assert.Equal(t, expectedError.Error(), err.Error())
+
+	_, err = innerStructType(reflect.TypeOf(&a))
+	assert.NotNil(t, err)
+	assert.Equal(t, expectedError.Error(), err.Error())
+
+	var b *int
+	_, err = innerStructType(reflect.TypeOf(&b))
+	assert.NotNil(t, err)
+	assert.Equal(t, expectedError.Error(), err.Error())
+
+	type Foo struct {
+		Name string
+	}
+	var foo **Foo
+	_, err = innerStructType(reflect.TypeOf(&foo))
+	assert.NotNil(t, err)
+	assert.Equal(t, "pointer level too deep", err.Error())
+}
+
+func BenchmarkInnerStructType(b *testing.B) {
+	b.ResetTimer()
+
+	type Foo struct {
+		Name string
+	}
+
+	var bazz *Foo
+	for i := 0; i < b.N; i++ {
+		_, _ = innerStructType(reflect.TypeOf(&bazz))
+	}
 }

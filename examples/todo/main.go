@@ -26,15 +26,15 @@ func main() {
 	}
 
 	printFullFields(&task)
-	printWithOnlyFields(&task, "Title", "SimpleUser")
-	printWithOnlyFields(&task, "ID", "User[ID,Notifications[ID],AnotherNotifications[Title]]", "SimpleUser")
-	printMany()
-	printWithExcludeFields(&task, "Description", "ID", "User[Name,Notifications[ID,Content],AnotherNotifications], SimpleUser")
+	//printWithOnlyFields(&task, "Title", "SimpleUser")
+	//printWithOnlyFields(&task, "ID", "User[ID,Notifications[ID],AnotherNotifications[Title]]", "SimpleUser")
+	//printMany()
+	//printWithExcludeFields(&task, "Description", "ID", "User[Name,Notifications[ID,Content],AnotherNotifications], SimpleUser")
 	fmt.Printf("elapsed: %.1f ms\n", time.Since(start).Seconds()*1000)
 }
 
 func printFullFields(task *model.TaskModel) {
-	var taskSchema schema.TaskSchema
+	var taskSchema *schema.TaskSchema
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Millisecond)
 	defer cancel()
 

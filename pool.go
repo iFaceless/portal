@@ -28,33 +28,33 @@ var (
 )
 
 type (
-	// ProcessFunc is a callback function to be called in a worker.
+	// processFunc is a callback function to be called in a worker.
 	// It accepts user defined payload and returns user expected result.
-	ProcessFunc func(payload interface{}) (interface{}, error)
+	processFunc func(payload interface{}) (interface{}, error)
 	jobRequest  struct {
 		ctx        context.Context
 		wg         *sync.WaitGroup
 		payload    interface{}
-		pf         ProcessFunc
-		resultChan chan *JobResult
+		pf         processFunc
+		resultChan chan *jobResult
 	}
 
-	// JobResult contains the result data and an optional error.
-	JobResult struct {
+	// jobResult contains the result data and an optional error.
+	jobResult struct {
 		Data interface{}
 		Err  error
 	}
 )
 
-// SubmitJobs submits jobs to the worker pool and return the collected results.
-func SubmitJobs(ctx context.Context, pf ProcessFunc, payloads ...interface{}) (<-chan *JobResult, error) {
+// submitJobs submits jobs to the worker pool and return the collected results.
+func submitJobs(ctx context.Context, pf processFunc, payloads ...interface{}) (<-chan *jobResult, error) {
 	logger.Debugf("[portal.pool] submit jobs with %d payloads", len(payloads))
 	var wg sync.WaitGroup
 
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
-	level := DumpDepthFromContext(ctx)
+	level := dumpDepthFromContext(ctx)
 	workerPool, ok := levelWorkerPoolMap[level]
 	if !ok {
 		lockLevelWorkerPoolMap.Lock()
@@ -71,7 +71,7 @@ func SubmitJobs(ctx context.Context, pf ProcessFunc, payloads ...interface{}) (<
 		lockLevelWorkerPoolMap.Unlock()
 	}
 
-	resultChan := make(chan *JobResult, len(payloads))
+	resultChan := make(chan *jobResult, len(payloads))
 	for _, payload := range payloads {
 		wg.Add(1)
 		err := workerPool.Invoke(&jobRequest{
@@ -92,7 +92,7 @@ func SubmitJobs(ctx context.Context, pf ProcessFunc, payloads ...interface{}) (<
 		close(resultChan)
 	}()
 
-	results := make(chan *JobResult, len(payloads))
+	results := make(chan *jobResult, len(payloads))
 	for result := range resultChan {
 		if result.Err != nil {
 			cancel()
@@ -144,9 +144,9 @@ func processRequest(request interface{}) {
 
 		select {
 		case <-req.ctx.Done():
-		case req.resultChan <- func() *JobResult {
+		case req.resultChan <- func() *jobResult {
 			data, err := req.pf(req.payload)
-			return &JobResult{Data: data, Err: err}
+			return &jobResult{Data: data, Err: err}
 		}():
 		}
 	default:

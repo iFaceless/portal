@@ -13,19 +13,21 @@ import (
 var (
 	defaultTagName             = "portal"
 	cachedFieldTagSettings     = make(map[string]map[string]string)
-	lockCachedFieldTagSettings sync.Mutex
+	lockCachedFieldTagSettings sync.RWMutex
 )
 
-type Field struct {
+type schemaField struct {
 	*structs.Field
 	settings  map[string]string
 	isIgnored bool //nolint
-	schema    *Schema
+	schema    *schema
 }
 
-func NewField(schema *Schema, field *structs.Field) *Field {
+func newField(schema *schema, field *structs.Field) *schemaField {
 	tagStr := field.Tag(defaultTagName)
+	lockCachedFieldTagSettings.RLock()
 	settings, ok := cachedFieldTagSettings[tagStr]
+	lockCachedFieldTagSettings.RUnlock()
 	if !ok {
 		lockCachedFieldTagSettings.Lock()
 		result := parseTagSettings(tagStr)
@@ -34,24 +36,24 @@ func NewField(schema *Schema, field *structs.Field) *Field {
 		lockCachedFieldTagSettings.Unlock()
 	}
 
-	return &Field{
+	return &schemaField{
 		Field:    field,
 		schema:   schema,
 		settings: settings,
 	}
 }
 
-func (f *Field) String() string {
-	return f.schema.Name() + "." + f.Name()
+func (f *schemaField) String() string {
+	return f.schema.name() + "." + f.Name()
 }
 
-func (f *Field) SetValue(v interface{}) error {
+func (f *schemaField) setValue(v interface{}) error {
 	realValue, err := f.realInputValue(v)
 	if err != nil {
 		return err
 	}
 
-	convertedValue, err := Convert(f.Value(), realValue)
+	convertedValue, err := convert(f.Value(), realValue)
 	if err != nil {
 		return f.setIndirectly(realValue)
 	} else {
@@ -59,7 +61,7 @@ func (f *Field) SetValue(v interface{}) error {
 	}
 }
 
-func (f *Field) realInputValue(v interface{}) (interface{}, error) {
+func (f *schemaField) realInputValue(v interface{}) (interface{}, error) {
 	switch r := v.(type) {
 	case driver.Valuer:
 		return r.Value()
@@ -70,7 +72,7 @@ func (f *Field) realInputValue(v interface{}) (interface{}, error) {
 	}
 }
 
-func (f *Field) setIndirectly(v interface{}) error {
+func (f *schemaField) setIndirectly(v interface{}) error {
 	outValueType := reflect.TypeOf(f.Value())
 
 	var outValuePtr reflect.Value
@@ -99,27 +101,27 @@ func (f *Field) setIndirectly(v interface{}) error {
 	return nil
 }
 
-func (f *Field) IsRequired() bool {
+func (f *schemaField) isRequired() bool {
 	return f.tagHasOption("REQUIRED")
 }
 
-func (f *Field) IsNested() bool {
+func (f *schemaField) isNested() bool {
 	return f.tagHasOption("NESTED")
 }
 
-func (f *Field) Many() bool {
+func (f *schemaField) hasMany() bool {
 	return f.Kind() == reflect.Slice
 }
 
-func (f *Field) Method() string {
+func (f *schemaField) method() string {
 	return f.settings["METH"]
 }
 
-func (f *Field) HasMethod() bool {
+func (f *schemaField) hasMethod() bool {
 	return f.tagHasOption("METH")
 }
 
-func (f *Field) ChainingAttrs() (attrs []string) {
+func (f *schemaField) chainingAttrs() (attrs []string) {
 	result, ok := f.settings["ATTR"]
 	if !ok {
 		return nil
@@ -130,11 +132,11 @@ func (f *Field) ChainingAttrs() (attrs []string) {
 	return
 }
 
-func (f *Field) HasChainingAttrs() bool {
+func (f *schemaField) hasChainingAttrs() bool {
 	return f.tagHasOption("ATTR")
 }
 
-func (f *Field) Const() interface{} {
+func (f *schemaField) constValue() interface{} {
 	val, ok := f.settings["CONST"]
 	if ok {
 		return val
@@ -143,20 +145,20 @@ func (f *Field) Const() interface{} {
 	}
 }
 
-func (f *Field) HasConst() bool {
+func (f *schemaField) hasConstValue() bool {
 	return f.tagHasOption("CONST")
 }
 
-func (f *Field) tagHasOption(opt string) bool {
+func (f *schemaField) tagHasOption(opt string) bool {
 	if _, ok := f.settings[opt]; ok {
 		return true
 	}
 	return false
 }
 
-func (f *Field) NestedOnlyNames(customFilters []*FilterNode) (names []string) {
-	filterNames := ExtractFilterNodeNames(
-		customFilters, &ExtractOption{queryByParentName: f.Name()})
+func (f *schemaField) nestedOnlyNames(customFilters []*filterNode) (names []string) {
+	filterNames := extractFilterNodeNames(
+		customFilters, &extractOption{queryByParentName: f.Name()})
 	if len(filterNames) > 0 {
 		return filterNames
 	} else {
@@ -164,7 +166,7 @@ func (f *Field) NestedOnlyNames(customFilters []*FilterNode) (names []string) {
 	}
 }
 
-func (f *Field) nestedOnlyNamesParsedFromTag() (names []string) {
+func (f *schemaField) nestedOnlyNamesParsedFromTag() (names []string) {
 	if onlyNames, ok := f.settings["ONLY"]; ok {
 		for _, name := range strings.Split(onlyNames, ",") {
 			names = append(names, strings.TrimSpace(name))
@@ -173,10 +175,10 @@ func (f *Field) nestedOnlyNamesParsedFromTag() (names []string) {
 	return
 }
 
-func (f *Field) NestedExcludeNames(customFilters []*FilterNode) []string {
-	fieldNames := ExtractFilterNodeNames(
+func (f *schemaField) nestedExcludeNames(customFilters []*filterNode) []string {
+	fieldNames := extractFilterNodeNames(
 		customFilters,
-		&ExtractOption{ignoreNodeWithChildren: true, queryByParentName: f.Name()},
+		&extractOption{ignoreNodeWithChildren: true, queryByParentName: f.Name()},
 	)
 	if len(fieldNames) > 0 {
 		return fieldNames
@@ -185,7 +187,7 @@ func (f *Field) NestedExcludeNames(customFilters []*FilterNode) []string {
 	}
 }
 
-func (f *Field) nestedExcludeNamesParsedFromTag() (names []string) {
+func (f *schemaField) nestedExcludeNamesParsedFromTag() (names []string) {
 	if excludeNames, ok := f.settings["EXCLUDE"]; ok {
 		for _, name := range strings.Split(excludeNames, ",") {
 			names = append(names, strings.TrimSpace(name))
@@ -194,7 +196,7 @@ func (f *Field) nestedExcludeNamesParsedFromTag() (names []string) {
 	return
 }
 
-func (f *Field) Async() bool {
+func (f *schemaField) async() bool {
 	return f.tagHasOption("ASYNC")
 }
 

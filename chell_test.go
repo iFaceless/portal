@@ -5,9 +5,6 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/ifaceless/portal/examples/todo/model"
-	"github.com/ifaceless/portal/examples/todo/schema"
-
 	"github.com/stretchr/testify/assert"
 )
 
@@ -84,6 +81,12 @@ func TestDumpOneWithAllFields(t *testing.T) {
 
 	data, _ := json.Marshal(taskSchema)
 	assert.Equal(t, `{"id":"1","title":"Finish your jobs.","description":"Custom description","user":{"id":"1","name":"user:1","notifications":[{"id":"0","title":"title_0","content":"content_0"}],"another_notifications":[{"id":"0","title":"title_0","content":"content_0"}]},"simple_user":{"name":"user:1"}}`, string(data))
+
+	var taskSchema1 *TaskSchema
+	err = Dump(&taskSchema1, &task)
+	assert.Nil(t, err)
+	data1, _ := json.Marshal(taskSchema)
+	assert.Equal(t, `{"id":"1","title":"Finish your jobs.","description":"Custom description","user":{"id":"1","name":"user:1","notifications":[{"id":"0","title":"title_0","content":"content_0"}],"another_notifications":[{"id":"0","title":"title_0","content":"content_0"}]},"simple_user":{"name":"user:1"}}`, string(data1))
 }
 
 func TestDumpOneFilterOnlyFields(t *testing.T) {
@@ -124,11 +127,11 @@ func TestDumpOneExcludeFields(t *testing.T) {
 }
 
 func TestDumpMany(t *testing.T) {
-	var taskSchemas []schema.TaskSchema
+	var taskSchemas []TaskSchema
 
-	tasks := make([]*model.TaskModel, 0)
+	tasks := make([]*TaskModel, 0)
 	for i := 0; i < 2; i++ {
-		tasks = append(tasks, &model.TaskModel{
+		tasks = append(tasks, &TaskModel{
 			ID:     i,
 			UserID: i + 100,
 			Title:  fmt.Sprintf("Task #%d", i+1),

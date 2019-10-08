@@ -8,11 +8,11 @@ type contextKey struct {
 
 var dumpDepthCtxKey = contextKey{name: "dump-depth"}
 
-func IncrDumpDepthContext(ctx context.Context) context.Context {
-	return context.WithValue(ctx, dumpDepthCtxKey, DumpDepthFromContext(ctx)+1)
+func incrDumpDepthContext(ctx context.Context) context.Context {
+	return context.WithValue(ctx, dumpDepthCtxKey, dumpDepthFromContext(ctx)+1)
 }
 
-func DumpDepthFromContext(ctx context.Context) int {
+func dumpDepthFromContext(ctx context.Context) int {
 	val := ctx.Value(dumpDepthCtxKey)
 	depth, ok := val.(int)
 	if !ok {

@@ -29,47 +29,47 @@ func (u *UserSchema2) GetName(user interface{}) interface{} {
 }
 
 func TestSchema(t *testing.T) {
-	schema := NewSchema(&UserSchema2{})
-	assert.Equal(t, "UserSchema2", schema.Name())
-	assert.NotNil(t, schema.Struct())
+	schema := newSchema(&UserSchema2{})
+	assert.Equal(t, "UserSchema2", schema.name())
+	assert.NotNil(t, schema.innerStruct())
 
 	user := struct {
 		ID     int
 		School *SchoolSchema
 	}{10, &SchoolSchema{Name: "test school"}}
 
-	idField := NewField(schema, schema.schemaStruct.Field("ID"))
-	val, err := schema.FieldValueFromData(context.TODO(), idField, user)
+	idField := newField(schema, schema.schemaStruct.Field("ID"))
+	val, err := schema.fieldValueFromSrc(context.TODO(), idField, user)
 	assert.Nil(t, err)
 	assert.Equal(t, 10, val)
 
-	nameField := NewField(schema, schema.schemaStruct.Field("Name"))
-	val, err = schema.FieldValueFromData(context.TODO(), nameField, user)
+	nameField := newField(schema, schema.schemaStruct.Field("Name"))
+	val, err = schema.fieldValueFromSrc(context.TODO(), nameField, user)
 	assert.Nil(t, err)
 	assert.Equal(t, "test", val)
 
-	schoolField := NewField(schema, schema.schemaStruct.Field("School"))
-	val, err = schema.FieldValueFromData(context.TODO(), schoolField, user)
+	schoolField := newField(schema, schema.schemaStruct.Field("School"))
+	val, err = schema.fieldValueFromSrc(context.TODO(), schoolField, user)
 	assert.Nil(t, err)
 	assert.Equal(t, &SchoolSchema{Name: "test school", Addr: ""}, val)
 }
 
 func TestSchema_GetFields(t *testing.T) {
-	schema := NewSchema(&UserSchema2{})
-	assert.ElementsMatch(t, []string{"Age", "ID", "Name", "School", "Async"}, filedNames(schema.AvailableFields()))
+	schema := newSchema(&UserSchema2{})
+	assert.ElementsMatch(t, []string{"Age", "ID", "Name", "School", "Async"}, filedNames(schema.availableFields()))
 
-	assert.ElementsMatch(t, []string{"Age", "ID", "Name", "School"}, filedNames(schema.SyncFields()))
-	assert.ElementsMatch(t, []string{"Async"}, filedNames(schema.AsyncFields()))
+	assert.ElementsMatch(t, []string{"Age", "ID", "Name", "School"}, filedNames(schema.syncFields()))
+	assert.ElementsMatch(t, []string{"Async"}, filedNames(schema.asyncFields()))
 
-	schema.SetOnlyFields("ID")
-	assert.ElementsMatch(t, []string{"ID"}, filedNames(schema.AvailableFields()))
+	schema.setOnlyFields("ID")
+	assert.ElementsMatch(t, []string{"ID"}, filedNames(schema.availableFields()))
 
-	schema = NewSchema(&UserSchema2{})
-	schema.SetExcludeFields("ID", "Name", "School")
-	assert.ElementsMatch(t, []string{"Age", "Async"}, filedNames(schema.AvailableFields()))
+	schema = newSchema(&UserSchema2{})
+	schema.setExcludeFields("ID", "Name", "School")
+	assert.ElementsMatch(t, []string{"Age", "Async"}, filedNames(schema.availableFields()))
 }
 
-func filedNames(fields []*Field) (names []string) {
+func filedNames(fields []*schemaField) (names []string) {
 	for _, f := range fields {
 		names = append(names, f.Name())
 	}

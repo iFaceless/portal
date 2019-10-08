@@ -9,10 +9,10 @@ import (
 
 func TestDumpDepthContext(t *testing.T) {
 	ctx := context.Background()
-	depth := DumpDepthFromContext(ctx)
+	depth := dumpDepthFromContext(ctx)
 	assert.Equal(t, 0, depth)
 
-	ctx = IncrDumpDepthContext(ctx)
-	depth = DumpDepthFromContext(ctx)
+	ctx = incrDumpDepthContext(ctx)
+	depth = dumpDepthFromContext(ctx)
 	assert.Equal(t, 1, depth)
 }

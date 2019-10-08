@@ -10,13 +10,13 @@ import (
 	"github.com/spf13/cast"
 )
 
-// Convert converts value from src type to target type
+// convert converts value from src type to target type
 // Conditions should be considered carefully:
 // - from is value type, to is a pointer type
 // - from is pointer type，to is value type
 // - from is value type, to is value type
 // - from and to are all pointer type
-func Convert(to, from interface{}) (out interface{}, err error) {
+func convert(to, from interface{}) (out interface{}, err error) {
 	v := from
 	iv := reflect.ValueOf(from)
 	if iv.Type().Kind() == reflect.Ptr {

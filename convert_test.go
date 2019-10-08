@@ -33,11 +33,11 @@ func (s *SuiteConvertTester) TestToInt() {
 		tmp := c
 
 		var target int
-		out, err := Convert(target, tmp)
+		out, err := convert(target, tmp)
 		s.Nil(err)
 		s.Equal(100, out.(int))
 
-		out, err = Convert(target, &tmp)
+		out, err = convert(target, &tmp)
 		s.Nil(err)
 		s.Equal(100, out.(int))
 	}
@@ -48,11 +48,11 @@ func (s *SuiteConvertTester) TestToIntPtr() {
 		tmp := c
 
 		var target *int
-		out, err := Convert(target, tmp)
+		out, err := convert(target, tmp)
 		s.Nil(err)
 		s.Equal(100, *out.(*int))
 
-		out, err = Convert(target, &tmp)
+		out, err = convert(target, &tmp)
 		s.Nil(err)
 		s.Equal(100, *out.(*int))
 	}
@@ -63,11 +63,11 @@ func (s *SuiteConvertTester) TestToInt64() {
 		tmp := c
 
 		var target int64
-		out, err := Convert(target, tmp)
+		out, err := convert(target, tmp)
 		s.Nil(err)
 		s.Equal(int64(100), out.(int64))
 
-		out, err = Convert(target, &tmp)
+		out, err = convert(target, &tmp)
 		s.Nil(err)
 		s.Equal(int64(100), out.(int64))
 	}
@@ -78,11 +78,11 @@ func (s *SuiteConvertTester) TestToInt64Ptr() {
 		tmp := c
 
 		var target *int64
-		out, err := Convert(target, tmp)
+		out, err := convert(target, tmp)
 		s.Nil(err)
 		s.Equal(int64(100), *out.(*int64))
 
-		out, err = Convert(target, &tmp)
+		out, err = convert(target, &tmp)
 		s.Nil(err)
 		s.Equal(int64(100), *out.(*int64))
 	}
@@ -93,11 +93,11 @@ func (s *SuiteConvertTester) TestToInt32() {
 		tmp := c
 
 		var target int32
-		out, err := Convert(target, tmp)
+		out, err := convert(target, tmp)
 		s.Nil(err)
 		s.Equal(int32(100), out.(int32))
 
-		out, err = Convert(target, &tmp)
+		out, err = convert(target, &tmp)
 		s.Nil(err)
 		s.Equal(int32(100), out.(int32))
 	}
@@ -108,11 +108,11 @@ func (s *SuiteConvertTester) TestToInt32Ptr() {
 		tmp := c
 
 		var target *int32
-		out, err := Convert(target, &tmp)
+		out, err := convert(target, &tmp)
 		s.Nil(err)
 		s.Equal(int32(100), *out.(*int32))
 
-		out, err = Convert(target, &tmp)
+		out, err = convert(target, &tmp)
 		s.Nil(err)
 		s.Equal(int32(100), *out.(*int32))
 	}
@@ -123,11 +123,11 @@ func (s *SuiteConvertTester) TestToInt16() {
 		tmp := c
 
 		var target int16
-		out, err := Convert(target, tmp)
+		out, err := convert(target, tmp)
 		s.Nil(err)
 		s.Equal(int16(100), out.(int16))
 
-		out, err = Convert(target, &tmp)
+		out, err = convert(target, &tmp)
 		s.Nil(err)
 		s.Equal(int16(100), out.(int16))
 	}
@@ -138,11 +138,11 @@ func (s *SuiteConvertTester) TestToInt16Ptr() {
 		tmp := c
 
 		var target *int16
-		out, err := Convert(target, &tmp)
+		out, err := convert(target, &tmp)
 		s.Nil(err)
 		s.Equal(int16(100), *out.(*int16))
 
-		out, err = Convert(target, &tmp)
+		out, err = convert(target, &tmp)
 		s.Nil(err)
 		s.Equal(int16(100), *out.(*int16))
 	}
@@ -153,11 +153,11 @@ func (s *SuiteConvertTester) TestToInt8() {
 		tmp := c
 
 		var target int8
-		out, err := Convert(target, tmp)
+		out, err := convert(target, tmp)
 		s.Nil(err)
 		s.Equal(int8(100), out.(int8))
 
-		out, err = Convert(target, &tmp)
+		out, err = convert(target, &tmp)
 		s.Nil(err)
 		s.Equal(int8(100), out.(int8))
 	}
@@ -168,11 +168,11 @@ func (s *SuiteConvertTester) TestToInt8Ptr() {
 		tmp := c
 
 		var target *int8
-		out, err := Convert(target, tmp)
+		out, err := convert(target, tmp)
 		s.Nil(err)
 		s.Equal(int8(100), *out.(*int8))
 
-		out, err = Convert(target, &tmp)
+		out, err = convert(target, &tmp)
 		s.Nil(err)
 		s.Equal(int8(100), *out.(*int8))
 	}
@@ -183,11 +183,11 @@ func (s *SuiteConvertTester) TestToUint() {
 		tmp := c
 
 		var target uint
-		out, err := Convert(target, tmp)
+		out, err := convert(target, tmp)
 		s.Nil(err)
 		s.Equal(uint(100), out.(uint))
 
-		out, err = Convert(target, &tmp)
+		out, err = convert(target, &tmp)
 		s.Nil(err)
 		s.Equal(uint(100), out.(uint))
 	}
@@ -198,11 +198,11 @@ func (s *SuiteConvertTester) TestToUintPtr() {
 		tmp := c
 
 		var target *uint
-		out, err := Convert(target, tmp)
+		out, err := convert(target, tmp)
 		s.Nil(err)
 		s.Equal(uint(100), *out.(*uint))
 
-		out, err = Convert(target, &tmp)
+		out, err = convert(target, &tmp)
 		s.Nil(err)
 		s.Equal(uint(100), *out.(*uint))
 	}
@@ -213,11 +213,11 @@ func (s *SuiteConvertTester) TestUioInt64() {
 		tmp := c
 
 		var target uint64
-		out, err := Convert(target, tmp)
+		out, err := convert(target, tmp)
 		s.Nil(err)
 		s.Equal(uint64(100), out.(uint64))
 
-		out, err = Convert(target, &tmp)
+		out, err = convert(target, &tmp)
 		s.Nil(err)
 		s.Equal(uint64(100), out.(uint64))
 	}
@@ -228,11 +228,11 @@ func (s *SuiteConvertTester) TestToUint64Ptr() {
 		tmp := c
 
 		var target *uint64
-		out, err := Convert(target, tmp)
+		out, err := convert(target, tmp)
 		s.Nil(err)
 		s.Equal(uint64(100), *out.(*uint64))
 
-		out, err = Convert(target, &tmp)
+		out, err = convert(target, &tmp)
 		s.Nil(err)
 		s.Equal(uint64(100), *out.(*uint64))
 	}
@@ -243,11 +243,11 @@ func (s *SuiteConvertTester) TestToUint32() {
 		tmp := c
 
 		var target uint32
-		out, err := Convert(target, tmp)
+		out, err := convert(target, tmp)
 		s.Nil(err)
 		s.Equal(uint32(100), out.(uint32))
 
-		out, err = Convert(target, &tmp)
+		out, err = convert(target, &tmp)
 		s.Nil(err)
 		s.Equal(uint32(100), out.(uint32))
 	}
@@ -258,11 +258,11 @@ func (s *SuiteConvertTester) TestToUint32Ptr() {
 		tmp := c
 
 		var target *uint32
-		out, err := Convert(target, tmp)
+		out, err := convert(target, tmp)
 		s.Nil(err)
 		s.Equal(uint32(100), *out.(*uint32))
 
-		out, err = Convert(target, &tmp)
+		out, err = convert(target, &tmp)
 		s.Nil(err)
 		s.Equal(uint32(100), *out.(*uint32))
 	}
@@ -273,11 +273,11 @@ func (s *SuiteConvertTester) TestToUint16() {
 		tmp := c
 
 		var target uint16
-		out, err := Convert(target, tmp)
+		out, err := convert(target, tmp)
 		s.Nil(err)
 		s.Equal(uint16(100), out.(uint16))
 
-		out, err = Convert(target, &tmp)
+		out, err = convert(target, &tmp)
 		s.Nil(err)
 		s.Equal(uint16(100), out.(uint16))
 	}
@@ -288,11 +288,11 @@ func (s *SuiteConvertTester) TestToUint16Ptr() {
 		tmp := c
 
 		var target *uint16
-		out, err := Convert(target, tmp)
+		out, err := convert(target, tmp)
 		s.Nil(err)
 		s.Equal(uint16(100), *out.(*uint16))
 
-		out, err = Convert(target, &tmp)
+		out, err = convert(target, &tmp)
 		s.Nil(err)
 		s.Equal(uint16(100), *out.(*uint16))
 	}
@@ -303,11 +303,11 @@ func (s *SuiteConvertTester) TestToUint8() {
 		tmp := c
 
 		var target uint8
-		out, err := Convert(target, tmp)
+		out, err := convert(target, tmp)
 		s.Nil(err)
 		s.Equal(uint8(100), out.(uint8))
 
-		out, err = Convert(target, &tmp)
+		out, err = convert(target, &tmp)
 		s.Nil(err)
 		s.Equal(uint8(100), out.(uint8))
 	}
@@ -318,11 +318,11 @@ func (s *SuiteConvertTester) TestToUint8Ptr() {
 		tmp := c
 
 		var target *uint8
-		out, err := Convert(target, tmp)
+		out, err := convert(target, tmp)
 		s.Nil(err)
 		s.Equal(uint8(100), *out.(*uint8))
 
-		out, err = Convert(target, &tmp)
+		out, err = convert(target, &tmp)
 		s.Nil(err)
 		s.Equal(uint8(100), *out.(*uint8))
 	}
@@ -333,11 +333,11 @@ func (s *SuiteConvertTester) TestToString() {
 		tmp := c
 
 		var target string
-		out, err := Convert(target, tmp)
+		out, err := convert(target, tmp)
 		s.Nil(err)
 		s.Equal("100", out.(string))
 
-		out, err = Convert(target, &tmp)
+		out, err = convert(target, &tmp)
 		s.Nil(err)
 		s.Equal("100", out.(string))
 	}
@@ -348,11 +348,11 @@ func (s *SuiteConvertTester) TestToStringPtr() {
 		tmp := c
 
 		var target *string
-		out, err := Convert(target, tmp)
+		out, err := convert(target, tmp)
 		s.Nil(err)
 		s.Equal("100", *out.(*string))
 
-		out, err = Convert(target, &tmp)
+		out, err = convert(target, &tmp)
 		s.Nil(err)
 		s.Equal("100", *out.(*string))
 	}
@@ -362,12 +362,12 @@ func (s *SuiteConvertTester) TestToTime() {
 	var target time.Time
 
 	t, _ := time.Parse("2006-01-02", "2019-10-05")
-	out, err := Convert(target, "2019-10-05")
+	out, err := convert(target, "2019-10-05")
 	s.Nil(err)
 	s.Equal(t, out.(time.Time))
 
 	x := "2019-10-05"
-	out, err = Convert(target, &x)
+	out, err = convert(target, &x)
 	s.Nil(err)
 	s.Equal(t, out.(time.Time))
 }
@@ -376,12 +376,12 @@ func (s *SuiteConvertTester) TestToTimePtr() {
 	var target *time.Time
 
 	t, _ := time.Parse("2006-01-02", "2019-10-05")
-	out, err := Convert(target, "2019-10-05")
+	out, err := convert(target, "2019-10-05")
 	s.Nil(err)
 	s.Equal(t, *out.(*time.Time))
 
 	x := "2019-10-05"
-	out, err = Convert(target, &x)
+	out, err = convert(target, &x)
 	s.Nil(err)
 	s.Equal(t, *out.(*time.Time))
 }
@@ -391,12 +391,12 @@ func (s *SuiteConvertTester) TestToDuration() {
 
 	d, _ := time.ParseDuration("300ms")
 
-	out, err := Convert(target, "300ms")
+	out, err := convert(target, "300ms")
 	s.Nil(err)
 	s.Equal(d, out.(time.Duration))
 
 	x := "300ms"
-	out, err = Convert(target, &x)
+	out, err = convert(target, &x)
 	s.Nil(err)
 	s.Equal(d, out.(time.Duration))
 }
@@ -406,12 +406,12 @@ func (s *SuiteConvertTester) TestToDurationPtr() {
 
 	d, _ := time.ParseDuration("300ms")
 
-	out, err := Convert(target, "300ms")
+	out, err := convert(target, "300ms")
 	s.Nil(err)
 	s.Equal(d, *out.(*time.Duration))
 
 	x := "300ms"
-	out, err = Convert(target, &x)
+	out, err = convert(target, &x)
 	s.Nil(err)
 	s.Equal(d, *out.(*time.Duration))
 }
@@ -419,12 +419,12 @@ func (s *SuiteConvertTester) TestToDurationPtr() {
 func (s *SuiteConvertTester) TestToBool() {
 	var target bool
 
-	out, err := Convert(target, "1")
+	out, err := convert(target, "1")
 	s.Nil(err)
 	s.Equal(true, out.(bool))
 
 	x := "0"
-	out, err = Convert(target, &x)
+	out, err = convert(target, &x)
 	s.Nil(err)
 	s.Equal(false, out.(bool))
 }
@@ -432,12 +432,12 @@ func (s *SuiteConvertTester) TestToBool() {
 func (s *SuiteConvertTester) TestToBoolPtr() {
 	var target *bool
 
-	out, err := Convert(target, "1")
+	out, err := convert(target, "1")
 	s.Nil(err)
 	s.Equal(true, *out.(*bool))
 
 	x := "0"
-	out, err = Convert(target, &x)
+	out, err = convert(target, &x)
 	s.Nil(err)
 	s.Equal(false, *out.(*bool))
 }
@@ -445,12 +445,12 @@ func (s *SuiteConvertTester) TestToBoolPtr() {
 func (s *SuiteConvertTester) TestToFloat32() {
 	var target float32
 
-	out, err := Convert(target, "1.234")
+	out, err := convert(target, "1.234")
 	s.Nil(err)
 	s.Equal(float32(1.234), out.(float32))
 
 	x := "1.234"
-	out, err = Convert(target, &x)
+	out, err = convert(target, &x)
 	s.Nil(err)
 	s.Equal(float32(1.234), out.(float32))
 }
@@ -458,12 +458,12 @@ func (s *SuiteConvertTester) TestToFloat32() {
 func (s *SuiteConvertTester) TestToFloat32Ptr() {
 	var target *float32
 
-	out, err := Convert(target, "1.234")
+	out, err := convert(target, "1.234")
 	s.Nil(err)
 	s.Equal(float32(1.234), *out.(*float32))
 
 	x := "1.234"
-	out, err = Convert(target, &x)
+	out, err = convert(target, &x)
 	s.Nil(err)
 	s.Equal(float32(1.234), *out.(*float32))
 }
@@ -471,12 +471,12 @@ func (s *SuiteConvertTester) TestToFloat32Ptr() {
 func (s *SuiteConvertTester) TestToFloat64() {
 	var target float64
 
-	out, err := Convert(target, "1.234")
+	out, err := convert(target, "1.234")
 	s.Nil(err)
 	s.Equal(float64(1.234), out.(float64))
 
 	x := "1.234"
-	out, err = Convert(target, &x)
+	out, err = convert(target, &x)
 	s.Nil(err)
 	s.Equal(float64(1.234), out.(float64))
 }
@@ -484,12 +484,12 @@ func (s *SuiteConvertTester) TestToFloat64() {
 func (s *SuiteConvertTester) TestToFloat64Ptr() {
 	var target *float64
 
-	out, err := Convert(target, "1.234")
+	out, err := convert(target, "1.234")
 	s.Nil(err)
 	s.Equal(float64(1.234), *out.(*float64))
 
 	x := "1.234"
-	out, err = Convert(target, &x)
+	out, err = convert(target, &x)
 	s.Nil(err)
 	s.Equal(float64(1.234), *out.(*float64))
 }
@@ -501,11 +501,11 @@ func (s *SuiteConvertTester) TestToStringMapString() {
 		"hello": "world",
 	}
 
-	out, err := Convert(target, x)
+	out, err := convert(target, x)
 	s.Nil(err)
 	s.Equal(map[string]string{"hello": "world"}, out.(map[string]string))
 
-	out, err = Convert(target, &x)
+	out, err = convert(target, &x)
 	s.Nil(err)
 	s.Equal(map[string]string{"hello": "world"}, out.(map[string]string))
 }
@@ -517,11 +517,11 @@ func (s *SuiteConvertTester) TestToStringMapStringPtr() {
 		"hello": "world",
 	}
 
-	out, err := Convert(target, x)
+	out, err := convert(target, x)
 	s.Nil(err)
 	s.Equal(map[string]string{"hello": "world"}, *out.(*map[string]string))
 
-	out, err = Convert(target, &x)
+	out, err = convert(target, &x)
 	s.Nil(err)
 	s.Equal(map[string]string{"hello": "world"}, *out.(*map[string]string))
 }
@@ -533,11 +533,11 @@ func (s *SuiteConvertTester) TestToStringMapStringSlice() {
 		"hello": []string{"world"},
 	}
 
-	out, err := Convert(target, x)
+	out, err := convert(target, x)
 	s.Nil(err)
 	s.Equal(map[string][]string{"hello": {"world"}}, out.(map[string][]string))
 
-	out, err = Convert(target, &x)
+	out, err = convert(target, &x)
 	s.Nil(err)
 	s.Equal(map[string][]string{"hello": {"world"}}, out.(map[string][]string))
 }
@@ -549,11 +549,11 @@ func (s *SuiteConvertTester) TestToStringMapStringSlicePtr() {
 		"hello": []string{"world"},
 	}
 
-	out, err := Convert(target, x)
+	out, err := convert(target, x)
 	s.Nil(err)
 	s.Equal(map[string][]string{"hello": {"world"}}, *out.(*map[string][]string))
 
-	out, err = Convert(target, &x)
+	out, err = convert(target, &x)
 	s.Nil(err)
 	s.Equal(map[string][]string{"hello": {"world"}}, *out.(*map[string][]string))
 }
@@ -565,11 +565,11 @@ func (s *SuiteConvertTester) TestToStringMapBool() {
 		"hello": true,
 	}
 
-	out, err := Convert(target, x)
+	out, err := convert(target, x)
 	s.Nil(err)
 	s.Equal(map[string]bool{"hello": true}, out.(map[string]bool))
 
-	out, err = Convert(target, &x)
+	out, err = convert(target, &x)
 	s.Nil(err)
 	s.Equal(map[string]bool{"hello": true}, out.(map[string]bool))
 }
@@ -581,11 +581,11 @@ func (s *SuiteConvertTester) TestToStringMapBoolPtr() {
 		"hello": true,
 	}
 
-	out, err := Convert(target, x)
+	out, err := convert(target, x)
 	s.Nil(err)
 	s.Equal(map[string]bool{"hello": true}, *out.(*map[string]bool))
 
-	out, err = Convert(target, &x)
+	out, err = convert(target, &x)
 	s.Nil(err)
 	s.Equal(map[string]bool{"hello": true}, *out.(*map[string]bool))
 }
@@ -597,11 +597,11 @@ func (s *SuiteConvertTester) TestToStringMap() {
 		"hello": true,
 	}
 
-	out, err := Convert(target, x)
+	out, err := convert(target, x)
 	s.Nil(err)
 	s.Equal(map[string]interface{}{"hello": true}, out.(map[string]interface{}))
 
-	out, err = Convert(target, &x)
+	out, err = convert(target, &x)
 	s.Nil(err)
 	s.Equal(map[string]interface{}{"hello": true}, out.(map[string]interface{}))
 }
@@ -613,11 +613,11 @@ func (s *SuiteConvertTester) TestToStringMapPtr() {
 		"hello": true,
 	}
 
-	out, err := Convert(target, x)
+	out, err := convert(target, x)
 	s.Nil(err)
 	s.Equal(map[string]interface{}{"hello": true}, *out.(*map[string]interface{}))
 
-	out, err = Convert(target, &x)
+	out, err = convert(target, &x)
 	s.Nil(err)
 	s.Equal(map[string]interface{}{"hello": true}, *out.(*map[string]interface{}))
 }
@@ -627,11 +627,11 @@ func (s *SuiteConvertTester) TestToSlice() {
 
 	x := []interface{}{1, 2, 3}
 
-	out, err := Convert(target, x)
+	out, err := convert(target, x)
 	s.Nil(err)
 	s.Equal([]interface{}{1, 2, 3}, out.([]interface{}))
 
-	out, err = Convert(target, &x)
+	out, err = convert(target, &x)
 	s.Nil(err)
 	s.Equal([]interface{}{1, 2, 3}, out.([]interface{}))
 }
@@ -641,11 +641,11 @@ func (s *SuiteConvertTester) TestToSlicePtr() {
 
 	x := []interface{}{1, 2, 3}
 
-	out, err := Convert(target, x)
+	out, err := convert(target, x)
 	s.Nil(err)
 	s.Equal([]interface{}{1, 2, 3}, *out.(*[]interface{}))
 
-	out, err = Convert(target, &x)
+	out, err = convert(target, &x)
 	s.Nil(err)
 	s.Equal([]interface{}{1, 2, 3}, *out.(*[]interface{}))
 }
@@ -655,11 +655,11 @@ func (s *SuiteConvertTester) TestToBoolSlice() {
 
 	x := []interface{}{1, 0, "true", "false"}
 
-	out, err := Convert(target, x)
+	out, err := convert(target, x)
 	s.Nil(err)
 	s.Equal([]bool{true, false, true, false}, out.([]bool))
 
-	out, err = Convert(target, &x)
+	out, err = convert(target, &x)
 	s.Nil(err)
 	s.Equal([]bool{true, false, true, false}, out.([]bool))
 }
@@ -669,11 +669,11 @@ func (s *SuiteConvertTester) TestToBoolSlicePtr() {
 
 	x := []interface{}{1, 0, "true", "false"}
 
-	out, err := Convert(target, x)
+	out, err := convert(target, x)
 	s.Nil(err)
 	s.Equal([]bool{true, false, true, false}, *out.(*[]bool))
 
-	out, err = Convert(target, &x)
+	out, err = convert(target, &x)
 	s.Nil(err)
 	s.Equal([]bool{true, false, true, false}, *out.(*[]bool))
 }
@@ -683,11 +683,11 @@ func (s *SuiteConvertTester) TestToStringSlice() {
 
 	x := []interface{}{1, "2", true}
 
-	out, err := Convert(target, x)
+	out, err := convert(target, x)
 	s.Nil(err)
 	s.Equal([]string{"1", "2", "true"}, out.([]string))
 
-	out, err = Convert(target, &x)
+	out, err = convert(target, &x)
 	s.Nil(err)
 	s.Equal([]string{"1", "2", "true"}, out.([]string))
 }
@@ -697,11 +697,11 @@ func (s *SuiteConvertTester) TestToStringSlicePtr() {
 
 	x := []interface{}{1, "2", true}
 
-	out, err := Convert(target, x)
+	out, err := convert(target, x)
 	s.Nil(err)
 	s.Equal([]string{"1", "2", "true"}, *out.(*[]string))
 
-	out, err = Convert(target, &x)
+	out, err = convert(target, &x)
 	s.Nil(err)
 	s.Equal([]string{"1", "2", "true"}, *out.(*[]string))
 }
@@ -711,11 +711,11 @@ func (s *SuiteConvertTester) TestToIntSlice() {
 
 	x := []interface{}{"1", "2"}
 
-	out, err := Convert(target, x)
+	out, err := convert(target, x)
 	s.Nil(err)
 	s.Equal([]int{1, 2}, out.([]int))
 
-	out, err = Convert(target, &x)
+	out, err = convert(target, &x)
 	s.Nil(err)
 	s.Equal([]int{1, 2}, out.([]int))
 }
@@ -725,11 +725,11 @@ func (s *SuiteConvertTester) TestToIntSlicePtr() {
 
 	x := []interface{}{"1", "2"}
 
-	out, err := Convert(target, x)
+	out, err := convert(target, x)
 	s.Nil(err)
 	s.Equal([]int{1, 2}, *out.(*[]int))
 
-	out, err = Convert(target, &x)
+	out, err = convert(target, &x)
 	s.Nil(err)
 	s.Equal([]int{1, 2}, *out.(*[]int))
 }
@@ -739,12 +739,12 @@ func (s *SuiteConvertTester) TestToDurationSlice() {
 
 	d, _ := time.ParseDuration("300ms")
 
-	out, err := Convert(target, []string{"300ms"})
+	out, err := convert(target, []string{"300ms"})
 	s.Nil(err)
 	s.Equal([]time.Duration{d}, out.([]time.Duration))
 
 	x := []string{"300ms"}
-	out, err = Convert(target, &x)
+	out, err = convert(target, &x)
 	s.Nil(err)
 	s.Equal([]time.Duration{d}, out.([]time.Duration))
 }
@@ -754,12 +754,12 @@ func (s *SuiteConvertTester) TestToDurationSlicePtr() {
 
 	d, _ := time.ParseDuration("300ms")
 
-	out, err := Convert(target, []string{"300ms"})
+	out, err := convert(target, []string{"300ms"})
 	s.Nil(err)
 	s.Equal([]time.Duration{d}, *out.(*[]time.Duration))
 
 	x := []string{"300ms"}
-	out, err = Convert(target, &x)
+	out, err = convert(target, &x)
 	s.Nil(err)
 	s.Equal([]time.Duration{d}, *out.(*[]time.Duration))
 }
@@ -772,16 +772,16 @@ func (s *SuiteConvertTester) Test_ConvertWithReflect() {
 	user := User{Name: "foo"}
 
 	var target User
-	out, err := Convert(target, user)
+	out, err := convert(target, user)
 	s.Nil(err)
 	s.Equal(user, out.(User))
 
 	var targetPtr *User
-	_, err = Convert(targetPtr, user)
+	_, err = convert(targetPtr, user)
 	s.NotNil(err)
 
 	var targetInt int
-	_, err = Convert(targetInt, "1.23abc")
+	_, err = convert(targetInt, "1.23abc")
 	s.NotNil(err)
 }
 

@@ -12,7 +12,7 @@ type Option func(c *Chell) error
 // ```
 func Only(fields ...string) Option {
 	return func(c *Chell) error {
-		filters, err := ParseFilters(fields)
+		filters, err := parseFilters(fields)
 		if err != nil {
 			return errors.WithStack(err)
 		}
@@ -29,7 +29,7 @@ func Only(fields ...string) Option {
 // ```
 func Exclude(fields ...string) Option {
 	return func(c *Chell) error {
-		filters, err := ParseFilters(fields)
+		filters, err := parseFilters(fields)
 		if err != nil {
 			return errors.WithStack(err)
 		}

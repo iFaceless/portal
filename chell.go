@@ -9,8 +9,8 @@ import (
 
 // Chell manages the dumping state.
 type Chell struct {
-	onlyFieldFilters    map[int][]*FilterNode
-	excludeFieldFilters map[int][]*FilterNode
+	onlyFieldFilters    map[int][]*filterNode
+	excludeFieldFilters map[int][]*filterNode
 }
 
 // New creates a new Chell instance with a worker pool waiting to be feed.
@@ -62,13 +62,13 @@ func (c *Chell) DumpWithContext(ctx context.Context, dst, src interface{}) error
 	if reflect.Indirect(rv).Kind() == reflect.Slice {
 		return c.dumpMany(
 			ctx, dst, src,
-			ExtractFilterNodeNames(c.onlyFieldFilters[0], nil),
-			ExtractFilterNodeNames(c.excludeFieldFilters[0], &ExtractOption{ignoreNodeWithChildren: true}))
+			extractFilterNodeNames(c.onlyFieldFilters[0], nil),
+			extractFilterNodeNames(c.excludeFieldFilters[0], &extractOption{ignoreNodeWithChildren: true}))
 	} else {
-		toSchema := NewSchema(dst)
-		toSchema.SetOnlyFields(ExtractFilterNodeNames(c.onlyFieldFilters[0], nil)...)
-		toSchema.SetExcludeFields(ExtractFilterNodeNames(c.excludeFieldFilters[0], &ExtractOption{ignoreNodeWithChildren: true})...)
-		return c.dump(IncrDumpDepthContext(ctx), toSchema, src)
+		toSchema := newSchema(dst)
+		toSchema.setOnlyFields(extractFilterNodeNames(c.onlyFieldFilters[0], nil)...)
+		toSchema.setExcludeFields(extractFilterNodeNames(c.excludeFieldFilters[0], &extractOption{ignoreNodeWithChildren: true})...)
+		return c.dump(incrDumpDepthContext(ctx), toSchema, src)
 	}
 }
 
@@ -80,7 +80,7 @@ func (c *Chell) DumpWithContext(ctx context.Context, dst, src interface{}) error
 // c.SetOnlyFields("A[B,C]") // keep field B and C of the nested struct A
 // ```
 func (c *Chell) SetOnlyFields(fields ...string) error {
-	filters, err := ParseFilters(fields)
+	filters, err := parseFilters(fields)
 	if err != nil {
 		return errors.WithStack(err)
 	} else {
@@ -97,7 +97,7 @@ func (c *Chell) SetOnlyFields(fields ...string) error {
 // c.SetExcludeFields("A[B,C]") // exclude field B and C of the nested struct A, but other fields of struct A are still selected.
 // ```
 func (c *Chell) SetExcludeFields(fields ...string) error {
-	filters, err := ParseFilters(fields)
+	filters, err := parseFilters(fields)
 	if err != nil {
 		return errors.WithStack(err)
 	} else {
@@ -106,7 +106,7 @@ func (c *Chell) SetExcludeFields(fields ...string) error {
 	return nil
 }
 
-func (c *Chell) dump(ctx context.Context, dst *Schema, src interface{}) error {
+func (c *Chell) dump(ctx context.Context, dst *schema, src interface{}) error {
 	err := c.dumpSyncFields(ctx, dst, src)
 	if err != nil {
 		return errors.WithStack(err)
@@ -118,8 +118,8 @@ func (c *Chell) dump(ctx context.Context, dst *Schema, src interface{}) error {
 	return err
 }
 
-func (c *Chell) dumpSyncFields(ctx context.Context, dst *Schema, src interface{}) error {
-	syncFields := dst.SyncFields()
+func (c *Chell) dumpSyncFields(ctx context.Context, dst *schema, src interface{}) error {
+	syncFields := dst.syncFields()
 	if len(syncFields) == 0 {
 		return nil
 	}
@@ -127,7 +127,7 @@ func (c *Chell) dumpSyncFields(ctx context.Context, dst *Schema, src interface{}
 	logger.Debugf("[portal.chell] dump sync fields: %s", syncFields)
 	for _, field := range syncFields {
 		logger.Debugf("[portal.chell] processing sync field '%s'", field)
-		val, err := dst.FieldValueFromData(ctx, field, src)
+		val, err := dst.fieldValueFromSrc(ctx, field, src)
 		if err != nil {
 			return err
 		}
@@ -141,20 +141,20 @@ func (c *Chell) dumpSyncFields(ctx context.Context, dst *Schema, src interface{}
 	return nil
 }
 
-func (c *Chell) dumpAsyncFields(ctx context.Context, dst *Schema, src interface{}) error {
-	asyncFields := dst.AsyncFields()
+func (c *Chell) dumpAsyncFields(ctx context.Context, dst *schema, src interface{}) error {
+	asyncFields := dst.asyncFields()
 	if len(asyncFields) == 0 {
 		return nil
 	}
 
 	logger.Debugf("[portal.chell] dump async fields: %s", asyncFields)
 	type Result struct {
-		field *Field
+		field *schemaField
 		data  interface{}
 	}
 
 	type Payload struct {
-		field *Field
+		field *schemaField
 	}
 
 	workerPayloads := make([]interface{}, 0, len(asyncFields))
@@ -162,12 +162,12 @@ func (c *Chell) dumpAsyncFields(ctx context.Context, dst *Schema, src interface{
 		workerPayloads = append(workerPayloads, &Payload{field: field})
 	}
 
-	jobResults, err := SubmitJobs(
+	jobResults, err := submitJobs(
 		ctx,
 		func(payload interface{}) (interface{}, error) {
 			p := payload.(*Payload)
 			logger.Debugf("[portal.chell] processing async field '%s'", p.field)
-			val, err := dst.FieldValueFromData(ctx, p.field, src)
+			val, err := dst.fieldValueFromSrc(ctx, p.field, src)
 			logger.Debugf("[portal.chell] async field '%s' got value '%v'", p.field, val)
 			return &Result{field: p.field, data: val}, err
 		},
@@ -190,20 +190,20 @@ func (c *Chell) dumpAsyncFields(ctx context.Context, dst *Schema, src interface{
 	return nil
 }
 
-func (c *Chell) dumpField(ctx context.Context, field *Field, value interface{}) error {
-	if IsNil(value) {
+func (c *Chell) dumpField(ctx context.Context, field *schemaField, value interface{}) error {
+	if isNil(value) {
 		logger.Warnf("[portal.chell] cannot get value for field %s, current input value is %v", field, value)
 		return nil
 	}
 
-	if Convertible(value, field.Field.Value()) {
-		return field.SetValue(value)
+	if convertible(value, field.Field.Value()) {
+		return field.setValue(value)
 	}
-	if !field.IsNested() {
+	if !field.isNested() {
 		logger.Debugf("[portal.chell] dump normal field %s with value %v", field, value)
-		return field.SetValue(value)
+		return field.setValue(value)
 	} else {
-		if field.Many() {
+		if field.hasMany() {
 			logger.Debugf("[portal.chell] dump nested slice field %s with value %v", field, value)
 			return c.dumpFieldNestedMany(ctx, field, value)
 		} else {
@@ -213,37 +213,37 @@ func (c *Chell) dumpField(ctx context.Context, field *Field, value interface{}) 
 	}
 }
 
-func (c *Chell) dumpFieldNestedOne(ctx context.Context, field *Field, src interface{}) error {
-	val := reflect.New(IndirectStructTypeP(reflect.TypeOf(field.Value())))
-	toNestedSchema := NewSchema(val.Interface())
+func (c *Chell) dumpFieldNestedOne(ctx context.Context, field *schemaField, src interface{}) error {
+	val := reflect.New(indirectStructTypeP(reflect.TypeOf(field.Value())))
+	toNestedSchema := newSchema(val.Interface())
 
-	depth := DumpDepthFromContext(ctx)
-	toNestedSchema.SetOnlyFields(field.NestedOnlyNames(c.onlyFieldFilters[depth])...)
-	toNestedSchema.SetExcludeFields(field.NestedExcludeNames(c.excludeFieldFilters[depth])...)
-	err := c.dump(IncrDumpDepthContext(ctx), toNestedSchema, src)
+	depth := dumpDepthFromContext(ctx)
+	toNestedSchema.setOnlyFields(field.nestedOnlyNames(c.onlyFieldFilters[depth])...)
+	toNestedSchema.setExcludeFields(field.nestedExcludeNames(c.excludeFieldFilters[depth])...)
+	err := c.dump(incrDumpDepthContext(ctx), toNestedSchema, src)
 	if err != nil {
 		return err
 	}
 	switch field.Kind() {
 	case reflect.Ptr:
-		return field.SetValue(val.Interface())
+		return field.setValue(val.Interface())
 	case reflect.Struct:
-		return field.SetValue(val.Elem().Interface())
+		return field.setValue(val.Elem().Interface())
 	default:
 		panic("invalid nested schema")
 	}
 }
 
-func (c *Chell) dumpFieldNestedMany(ctx context.Context, field *Field, src interface{}) error {
+func (c *Chell) dumpFieldNestedMany(ctx context.Context, field *schemaField, src interface{}) error {
 	typ := reflect.TypeOf(field.Value())
 	nestedSchemaSlice := reflect.New(typ)
-	depth := DumpDepthFromContext(ctx)
+	depth := dumpDepthFromContext(ctx)
 	err := c.dumpMany(
 		ctx,
 		nestedSchemaSlice.Interface(),
 		src,
-		field.NestedOnlyNames(c.onlyFieldFilters[depth]),
-		field.NestedExcludeNames(c.excludeFieldFilters[depth]),
+		field.nestedOnlyNames(c.onlyFieldFilters[depth]),
+		field.nestedExcludeNames(c.excludeFieldFilters[depth]),
 	)
 	if err != nil {
 		return err
@@ -251,9 +251,9 @@ func (c *Chell) dumpFieldNestedMany(ctx context.Context, field *Field, src inter
 
 	switch typ.Kind() {
 	case reflect.Ptr:
-		err = field.SetValue(nestedSchemaSlice.Interface())
+		err = field.setValue(nestedSchemaSlice.Interface())
 	case reflect.Slice:
-		err = field.SetValue(nestedSchemaSlice.Elem().Interface())
+		err = field.setValue(nestedSchemaSlice.Elem().Interface())
 	default:
 		panic("invalid nested schema")
 	}
@@ -276,7 +276,7 @@ func (c *Chell) dumpMany(ctx context.Context, dst, src interface{}, onlyFields, 
 
 	schemaSlice := reflect.Indirect(reflect.ValueOf(dst))
 	schemaSlice.Set(reflect.MakeSlice(schemaSlice.Type(), rv.Len(), rv.Cap()))
-	schemaType := IndirectStructTypeP(schemaSlice.Type())
+	schemaType := indirectStructTypeP(schemaSlice.Type())
 
 	type Result struct {
 		index     int
@@ -288,16 +288,16 @@ func (c *Chell) dumpMany(ctx context.Context, dst, src interface{}, onlyFields, 
 		payloads = append(payloads, i)
 	}
 
-	jobResults, err := SubmitJobs(
+	jobResults, err := submitJobs(
 		ctx,
 		func(payload interface{}) (interface{}, error) {
 			index := payload.(int)
 			schemaPtr := reflect.New(schemaType)
-			toSchema := NewSchema(schemaPtr.Interface())
-			toSchema.SetOnlyFields(onlyFields...)
-			toSchema.SetExcludeFields(excludeFields...)
+			toSchema := newSchema(schemaPtr.Interface())
+			toSchema.setOnlyFields(onlyFields...)
+			toSchema.setExcludeFields(excludeFields...)
 			val := rv.Index(index).Interface()
-			err := c.dump(IncrDumpDepthContext(ctx), toSchema, val)
+			err := c.dump(incrDumpDepthContext(ctx), toSchema, val)
 			return &Result{index: index, schemaPtr: schemaPtr}, err
 		},
 		payloads...)

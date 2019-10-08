@@ -7,7 +7,7 @@ import (
 	"reflect"
 )
 
-func GetNestedValue(ctx context.Context, any interface{}, chainingAttrs []string) (interface{}, error) {
+func nestedValue(ctx context.Context, any interface{}, chainingAttrs []string) (interface{}, error) {
 	if len(chainingAttrs) == 0 {
 		return any, nil
 	}
@@ -24,20 +24,20 @@ func GetNestedValue(ctx context.Context, any interface{}, chainingAttrs []string
 	attr := chainingAttrs[0]
 	field := reflect.Indirect(objValue).FieldByName(attr)
 	if field.IsValid() {
-		return GetNestedValue(ctx, field.Interface(), chainingAttrs[1:])
+		return nestedValue(ctx, field.Interface(), chainingAttrs[1:])
 	} else {
-		ret, err := InvokeMethod(ctx, any, attr)
+		ret, err := invokeStructMethod(ctx, any, attr)
 		if err != nil {
 			return nil, err
 		}
-		return GetNestedValue(ctx, ret, chainingAttrs[1:])
+		return nestedValue(ctx, ret, chainingAttrs[1:])
 	}
 }
 
-// InvokeMethod
-func InvokeMethod(ctx context.Context, any interface{}, name string, args ...interface{}) (interface{}, error) {
+// invokeStructMethod calls the specified method of given struct `any` and return results.
+func invokeStructMethod(ctx context.Context, any interface{}, name string, args ...interface{}) (interface{}, error) {
 	structValue := reflect.ValueOf(any)
-	method, err := getStructMethod(structValue, name)
+	method, err := findStructMethod(structValue, name)
 	if err != nil {
 		return nil, err
 	}
@@ -72,7 +72,7 @@ func InvokeMethod(ctx context.Context, any interface{}, name string, args ...int
 	return (method.Call(in)[0]).Interface(), nil
 }
 
-func getStructMethod(any reflect.Value, name string) (reflect.Value, error) {
+func findStructMethod(any reflect.Value, name string) (reflect.Value, error) {
 	var structPtr = any
 	if any.Kind() != reflect.Ptr {
 		structPtr = reflect.New(any.Type())
@@ -91,37 +91,29 @@ func shouldWithContext(funcType reflect.Type) bool {
 	return funcType.NumIn() > 0 && funcType.In(0).Name() == "Context"
 }
 
-// IndirectStructTypeP get indirect struct type, panics if failed
-func IndirectStructTypeP(typ reflect.Type) reflect.Type {
-	typ, err := IndirectStructTypeE(typ)
+// indirectStructTypeP get indirect struct type, panics if failed
+func indirectStructTypeP(typ reflect.Type) reflect.Type {
+	typ, err := indirectStructTypeE(typ)
 	if err != nil {
 		panic(fmt.Sprintf("failed to get indirect struct type: %s", err))
 	}
 	return typ
 }
 
-func IndirectStructTypeE(typ reflect.Type) (reflect.Type, error) {
+func indirectStructTypeE(typ reflect.Type) (reflect.Type, error) {
 	switch typ.Kind() {
 	case reflect.Struct:
 		return typ, nil
 	case reflect.Slice:
-		return IndirectStructTypeE(typ.Elem())
+		return indirectStructTypeE(typ.Elem())
 	case reflect.Ptr:
-		return IndirectStructTypeE(typ.Elem())
+		return indirectStructTypeE(typ.Elem())
 	default:
 		return nil, fmt.Errorf("unsupported type '%s'", typ.Name())
 	}
 }
 
-func MinInt(a, b int) int {
-	if a > b {
-		return b
-	} else {
-		return a
-	}
-}
-
-func StructName(v interface{}) string {
+func structName(v interface{}) string {
 	typ := reflect.TypeOf(v)
 	if typ.Kind() == reflect.Ptr {
 		typ = typ.Elem()
@@ -132,7 +124,7 @@ func StructName(v interface{}) string {
 	return typ.Name()
 }
 
-func IsNil(in interface{}) bool {
+func isNil(in interface{}) bool {
 	if in == nil {
 		return true
 	}
@@ -145,6 +137,33 @@ func IsNil(in interface{}) bool {
 	}
 }
 
-func Convertible(from, to interface{}) bool {
+func convertible(from, to interface{}) bool {
 	return reflect.TypeOf(from).ConvertibleTo(reflect.TypeOf(to))
+}
+
+// innerStructType gets the inner struct type.
+// Cases:
+// - ModelStruct
+// - &ModelStruct
+// - &&ModelStruct
+func innerStructType(typ reflect.Type) (reflect.Type, error) {
+	switch typ.Kind() {
+	case reflect.Struct:
+		return typ, nil
+	case reflect.Ptr:
+		curType := typ
+		for ptrLevel := 0; ptrLevel < 2; ptrLevel++ {
+			switch curType.Elem().Kind() {
+			case reflect.Ptr:
+				curType = curType.Elem()
+			case reflect.Struct:
+				return curType.Elem(), nil
+			default:
+				return nil, errors.New("failed to get inner struct type")
+			}
+		}
+		return nil, errors.New("pointer level too deep")
+	default:
+		return nil, errors.New("failed to get inner struct type")
+	}
 }

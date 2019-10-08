@@ -9,70 +9,70 @@ import (
 func TestExtractFilterNodeNames(t *testing.T) {
 	asserter := assert.New(t)
 
-	nodeA := &FilterNode{Name: "A"}
+	nodeA := &filterNode{Name: "A"}
 
-	nodeB := &FilterNode{Name: "B"}
-	nodeC := &FilterNode{Name: "C", Parent: nodeB}
-	nodeD := &FilterNode{Name: "D", Parent: nodeB}
+	nodeB := &filterNode{Name: "B"}
+	nodeC := &filterNode{Name: "C", Parent: nodeB}
+	nodeD := &filterNode{Name: "D", Parent: nodeB}
 	nodeB.Children = append(nodeB.Children, nodeC, nodeD)
 
-	nodeE := &FilterNode{Name: "E"}
-	nodeF := &FilterNode{Name: "F", Parent: nodeE}
+	nodeE := &filterNode{Name: "E"}
+	nodeF := &filterNode{Name: "F", Parent: nodeE}
 	nodeE.Children = append(nodeE.Children, nodeF)
 
-	nodeG := &FilterNode{Name: "G"}
-	nodesMap := map[int][]*FilterNode{
+	nodeG := &filterNode{Name: "G"}
+	nodesMap := map[int][]*filterNode{
 		0: {nodeA, nodeB, nodeE, nodeG},
 		1: {nodeC, nodeD, nodeF},
 	}
 
-	names := ExtractFilterNodeNames(nodesMap[0], &ExtractOption{ignoreNodeWithChildren: true})
+	names := extractFilterNodeNames(nodesMap[0], &extractOption{ignoreNodeWithChildren: true})
 	asserter.Equal([]string{"A", "G"}, names)
 
-	names = ExtractFilterNodeNames(nodesMap[0], &ExtractOption{ignoreNodeWithChildren: false})
+	names = extractFilterNodeNames(nodesMap[0], &extractOption{ignoreNodeWithChildren: false})
 	asserter.Equal([]string{"A", "B", "E", "G"}, names)
 
-	names = ExtractFilterNodeNames(nodesMap[1], &ExtractOption{ignoreNodeWithChildren: false, queryByParentName: "B"})
+	names = extractFilterNodeNames(nodesMap[1], &extractOption{ignoreNodeWithChildren: false, queryByParentName: "B"})
 	asserter.Equal([]string{"C", "D"}, names)
 }
 
 func TestParseFilters(t *testing.T) {
 	asserter := assert.New(t)
 
-	node, err := ParseFilters([]string{"A"})
+	node, err := parseFilters([]string{"A"})
 	asserter.Nil(err)
-	expected := map[int][]*FilterNode{
-		0: {&FilterNode{Name: "A"}},
+	expected := map[int][]*filterNode{
+		0: {&filterNode{Name: "A"}},
 	}
 	asserter.Equal(expected, node)
 
-	node, err = ParseFilters([]string{"A", "B", "C"})
+	node, err = parseFilters([]string{"A", "B", "C"})
 	asserter.Nil(err)
-	expected = map[int][]*FilterNode{
+	expected = map[int][]*filterNode{
 		0: {
-			&FilterNode{Name: "A"},
-			&FilterNode{Name: "B"},
-			&FilterNode{Name: "C"},
+			&filterNode{Name: "A"},
+			&filterNode{Name: "B"},
+			&filterNode{Name: "C"},
 		},
 	}
 	asserter.Equal(expected, node)
 
-	node, err = ParseFilters([]string{"A", "B[C,D]", "E[ F]", "G"})
+	node, err = parseFilters([]string{"A", "B[C,D]", "E[ F]", "G"})
 	asserter.Nil(err)
 
-	nodeA := &FilterNode{Name: "A"}
+	nodeA := &filterNode{Name: "A"}
 
-	nodeB := &FilterNode{Name: "B"}
-	nodeC := &FilterNode{Name: "C", Parent: nodeB}
-	nodeD := &FilterNode{Name: "D", Parent: nodeB}
+	nodeB := &filterNode{Name: "B"}
+	nodeC := &filterNode{Name: "C", Parent: nodeB}
+	nodeD := &filterNode{Name: "D", Parent: nodeB}
 	nodeB.Children = append(nodeB.Children, nodeC, nodeD)
 
-	nodeE := &FilterNode{Name: "E"}
-	nodeF := &FilterNode{Name: "F", Parent: nodeE}
+	nodeE := &filterNode{Name: "E"}
+	nodeF := &filterNode{Name: "F", Parent: nodeE}
 	nodeE.Children = append(nodeE.Children, nodeF)
 
-	nodeG := &FilterNode{Name: "G"}
-	expected = map[int][]*FilterNode{
+	nodeG := &filterNode{Name: "G"}
+	expected = map[int][]*filterNode{
 		0: {nodeA, nodeB, nodeE, nodeG},
 		1: {nodeC, nodeD, nodeF},
 	}
@@ -82,40 +82,40 @@ func TestParseFilters(t *testing.T) {
 func TestParseFilterString(t *testing.T) {
 	asserter := assert.New(t)
 
-	node, err := ParseFilterString("[A]")
+	node, err := parseFilterString("[A]")
 	asserter.Nil(err)
-	expected := map[int][]*FilterNode{
-		0: {&FilterNode{Name: "A"}},
+	expected := map[int][]*filterNode{
+		0: {&filterNode{Name: "A"}},
 	}
 	asserter.Equal(expected, node)
 
-	node, err = ParseFilterString("[A,B, C ]")
+	node, err = parseFilterString("[A,B, C ]")
 	asserter.Nil(err)
-	expected = map[int][]*FilterNode{
+	expected = map[int][]*filterNode{
 		0: {
-			&FilterNode{Name: "A"},
-			&FilterNode{Name: "B"},
-			&FilterNode{Name: "C"},
+			&filterNode{Name: "A"},
+			&filterNode{Name: "B"},
+			&filterNode{Name: "C"},
 		},
 	}
 	asserter.Equal(expected, node)
 
-	node, err = ParseFilterString("[A,B[ C,D], E[F ],G ]")
+	node, err = parseFilterString("[A,B[ C,D], E[F ],G ]")
 	asserter.Nil(err)
 
-	nodeA := &FilterNode{Name: "A"}
+	nodeA := &filterNode{Name: "A"}
 
-	nodeB := &FilterNode{Name: "B"}
-	nodeC := &FilterNode{Name: "C", Parent: nodeB}
-	nodeD := &FilterNode{Name: "D", Parent: nodeB}
+	nodeB := &filterNode{Name: "B"}
+	nodeC := &filterNode{Name: "C", Parent: nodeB}
+	nodeD := &filterNode{Name: "D", Parent: nodeB}
 	nodeB.Children = append(nodeB.Children, nodeC, nodeD)
 
-	nodeE := &FilterNode{Name: "E"}
-	nodeF := &FilterNode{Name: "F", Parent: nodeE}
+	nodeE := &filterNode{Name: "E"}
+	nodeF := &filterNode{Name: "F", Parent: nodeE}
 	nodeE.Children = append(nodeE.Children, nodeF)
 
-	nodeG := &FilterNode{Name: "G"}
-	expected = map[int][]*FilterNode{
+	nodeG := &filterNode{Name: "G"}
+	expected = map[int][]*filterNode{
 		0: {nodeA, nodeB, nodeE, nodeG},
 		1: {nodeC, nodeD, nodeF},
 	}
@@ -124,11 +124,11 @@ func TestParseFilterString(t *testing.T) {
 
 func TestParseFilterString_BoundaryConditions(t *testing.T) {
 	asserter := assert.New(t)
-	node, err := ParseFilterString("")
+	node, err := parseFilterString("")
 	asserter.Nil(err)
 	asserter.Nil(node)
 
-	_, err = ParseFilterString("A")
+	_, err = parseFilterString("A")
 	asserter.Equal(ErrPrefixIsNotBracket, err)
 }
 

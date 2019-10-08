@@ -5,7 +5,7 @@
 # What's portal?
 ![portal game](https://s2.ax1x.com/2019/09/28/u1TnEt.jpg)
 
-It's a lightweight package which simplifies Go object serialization. Inspired heavily by [marshmallow](https://github.com/marshmallow-code/marshmallow), but with concurrency builtin for better performance.
+It's a lightweight package which simplifies Go object serialization. Inspired by [marshmallow](https://github.com/marshmallow-code/marshmallow), but with concurrency builtin for better performance.
 
 [portal](https://github.com/iFaceless/portal/) can be used to serialize app-level objects to specified objects (schema structs). The serialized objects can be rendered to any standard formats like JSON for an HTTP API. Most importantly, if some fields of a schema have different data sources, portal could **spawn several goroutines to retrieve fields' data concurrently**.
 
