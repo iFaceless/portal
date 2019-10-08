@@ -37,3 +37,19 @@ func Exclude(fields ...string) Option {
 		return nil
 	}
 }
+
+// FieldAliasMapTagName sets the tag name (e.g. `yaml`, `json`) to parse alias of a field name.
+// Example:
+// ```
+// struct Schema {
+//     ID   int `json:"id"`
+// }
+//
+// // portal parses the json tag, and maps `id` -> `ID`.
+// ```
+func FieldAliasMapTagName(tag string) Option {
+	return func(c *Chell) error {
+		c.fieldAliasMapTagName = tag
+		return nil
+	}
+}

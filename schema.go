@@ -9,9 +9,11 @@ import (
 )
 
 type schema struct {
-	RawValue            interface{}
-	schemaStruct        *structs.Struct
-	availableFieldNames map[string]bool
+	fieldAliasMapTagName string
+	rawValue             interface{}
+	schemaStruct         *structs.Struct
+	availableFieldNames  map[string]bool
+	fields               []*schemaField
 }
 
 func newSchema(v interface{}) *schema {
@@ -40,16 +42,23 @@ func newSchema(v interface{}) *schema {
 	}
 
 	sch := &schema{
-		schemaStruct:        structs.New(schemaValue.Addr().Interface()),
-		availableFieldNames: make(map[string]bool),
-		RawValue:            schemaValue.Addr().Interface(),
+		schemaStruct:         structs.New(schemaValue.Addr().Interface()),
+		availableFieldNames:  make(map[string]bool),
+		rawValue:             schemaValue.Addr().Interface(),
+		fieldAliasMapTagName: "json",
 	}
 
 	for _, name := range getAvailableFieldNames(sch.schemaStruct.Fields()) {
 		sch.availableFieldNames[name] = true
+		sch.fields = append(sch.fields, newField(sch, sch.schemaStruct.Field(name)))
 	}
 
 	return sch
+}
+
+func (s *schema) withFieldAliasMapTagName(t string) *schema {
+	s.fieldAliasMapTagName = t
+	return s
 }
 
 func getAvailableFieldNames(fields []*structs.Field) (names []string) {
@@ -65,12 +74,12 @@ func getAvailableFieldNames(fields []*structs.Field) (names []string) {
 
 func (s *schema) availableFields() []*schemaField {
 	fields := make([]*schemaField, 0)
-	for k, v := range s.availableFieldNames {
-		if v {
-			fields = append(fields, newField(s, s.schemaStruct.Field(k)))
+	for _, f := range s.fields {
+		v, ok := s.availableFieldNames[f.Name()]
+		if ok && v {
+			fields = append(fields, f)
 		}
 	}
-
 	return fields
 }
 
@@ -105,7 +114,7 @@ func (s *schema) fieldValueFromSrc(ctx context.Context, field *schemaField, v in
 	if field.hasConstValue() {
 		val = field.constValue()
 	} else if field.hasMethod() {
-		ret, err := invokeStructMethod(ctx, s.RawValue, field.method(), v)
+		ret, err := invokeStructMethod(ctx, s.rawValue, field.method(), v)
 		if err != nil {
 			return nil, fmt.Errorf("failed to get value: %s", err)
 		}
@@ -130,8 +139,8 @@ func (s *schema) fieldValueFromSrc(ctx context.Context, field *schemaField, v in
 	return
 }
 
-func (s *schema) setOnlyFields(fields ...string) {
-	if len(fields) == 0 {
+func (s *schema) setOnlyFields(fieldNames ...string) {
+	if len(fieldNames) == 0 {
 		return
 	}
 
@@ -139,29 +148,40 @@ func (s *schema) setOnlyFields(fields ...string) {
 		s.availableFieldNames[k] = false
 	}
 
-	for _, f := range fields {
-		if _, ok := s.availableFieldNames[f]; ok {
-			s.availableFieldNames[f] = true
+	for _, f := range fieldNames {
+		field := s.fieldByNameOrAlias(f)
+		if field == nil {
+			logger.Warnf("field name '%s.%s' not found", s.name(), f)
 		} else {
-			panic(fmt.Sprintf("field name '%s.%s' not found", s.name(), f))
+			s.availableFieldNames[field.Name()] = true
 		}
 	}
 }
 
-func (s *schema) setExcludeFields(fields ...string) {
-	if len(fields) == 0 {
+func (s *schema) setExcludeFields(fieldNames ...string) {
+	if len(fieldNames) == 0 {
 		return
 	}
 
-	for _, f := range fields {
-		if _, ok := s.availableFieldNames[f]; ok {
-			s.availableFieldNames[f] = false
+	for _, f := range fieldNames {
+		field := s.fieldByNameOrAlias(f)
+		if field == nil {
+			logger.Warnf("field name '%s.%s' not found", s.name(), f)
 		} else {
-			panic(fmt.Sprintf("field name '%s' not found", f))
+			s.availableFieldNames[field.Name()] = false
 		}
 	}
 }
 
 func (s *schema) name() string {
-	return structName(s.RawValue)
+	return structName(s.rawValue)
+}
+
+func (s *schema) fieldByNameOrAlias(name string) *schemaField {
+	for _, f := range s.fields {
+		if f.alias == name || f.Name() == name {
+			return f
+		}
+	}
+	return nil
 }

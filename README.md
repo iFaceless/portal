@@ -142,6 +142,12 @@ func main() {
 	portal.Dump(&taskSchema, &taskModel, portal.Only("Title", "SimpleUser"))
 	// data: {"title":"Finish your jobs.","simple_user":{"name":"user:1"}}
 	data, _ := json.Marshal(taskSchema)
+	
+	// select fields with alias defined in the json tag.
+	// actually, the default alias tag is `json`, `portal.FieldAliasMapTagName("json")` is optional.
+	portal.Dump(&taskSchema, &taskModel, portal.Only("title", "SimpleUser"), portal.FieldAliasMapTagName("json"))
+	// data: {"title":"Finish your jobs.","simple_user":{"name":"user:1"}}
+	data, _ := json.Marshal(taskSchema)
 
 	// you can keep any fields for any nested schemas
 	// multiple fields are separated with ','

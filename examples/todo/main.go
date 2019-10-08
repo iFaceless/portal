@@ -26,10 +26,10 @@ func main() {
 	}
 
 	printFullFields(&task)
-	//printWithOnlyFields(&task, "Title", "SimpleUser")
-	//printWithOnlyFields(&task, "ID", "User[ID,Notifications[ID],AnotherNotifications[Title]]", "SimpleUser")
-	//printMany()
-	//printWithExcludeFields(&task, "Description", "ID", "User[Name,Notifications[ID,Content],AnotherNotifications], SimpleUser")
+	printWithOnlyFields(&task, "Title", "SimpleUser")
+	printWithOnlyFields(&task, "ID", "User[ID,Notifications[ID],AnotherNotifications[Title]]", "SimpleUser")
+	printMany()
+	printWithExcludeFields(&task, "Description", "ID", "User[Name,Notifications[ID,Content],AnotherNotifications], SimpleUser")
 	fmt.Printf("elapsed: %.1f ms\n", time.Since(start).Seconds()*1000)
 }
 

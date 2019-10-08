@@ -2,6 +2,7 @@ package portal
 
 import (
 	"database/sql/driver"
+	"regexp"
 	"strings"
 	"sync"
 
@@ -13,6 +14,7 @@ import (
 var (
 	defaultTagName         = "portal"
 	cachedFieldTagSettings sync.Map
+	cachedAliasMap         sync.Map
 )
 
 type schemaField struct {
@@ -20,6 +22,7 @@ type schemaField struct {
 	settings  map[string]string
 	isIgnored bool //nolint
 	schema    *schema
+	alias     string
 }
 
 func newField(schema *schema, field *structs.Field) *schemaField {
@@ -40,6 +43,7 @@ func newField(schema *schema, field *structs.Field) *schemaField {
 		Field:    field,
 		schema:   schema,
 		settings: settings,
+		alias:    parseAlias(field.Tag(schema.fieldAliasMapTagName)),
 	}
 }
 
@@ -226,4 +230,30 @@ func parseTagSettings(s string) map[string]string {
 		}
 	}
 	return settings
+}
+
+func parseAlias(s string) string {
+	ret, ok := cachedAliasMap.Load(s)
+	if ok {
+		return ret.(string)
+	}
+
+	parts := strings.Split(s, ",")
+	if len(parts) == 0 {
+		cachedAliasMap.Store(s, "")
+		return ""
+	}
+	alias := strings.TrimSpace(parts[0])
+	re, err := regexp.Compile(`^[_a-zA-Z0-9]+-*[_a-zA-Z0-9]+$`)
+	if err != nil {
+		cachedAliasMap.Store(s, "")
+		return ""
+	}
+	if re.MatchString(alias) {
+		cachedAliasMap.Store(s, alias)
+		return alias
+	}
+
+	cachedAliasMap.Store(s, "")
+	return ""
 }

@@ -9,15 +9,20 @@ import (
 
 // Chell manages the dumping state.
 type Chell struct {
-	onlyFieldFilters    map[int][]*filterNode
-	excludeFieldFilters map[int][]*filterNode
+	// json, yaml etc.
+	fieldAliasMapTagName string
+	onlyFieldFilters     map[int][]*filterNode
+	excludeFieldFilters  map[int][]*filterNode
 }
 
 // New creates a new Chell instance with a worker pool waiting to be feed.
 // It's highly recommended to call function `portal.Dump()` or
 // `portal.DumpWithContext()` directly.
 func New(opts ...Option) (*Chell, error) {
-	chell := &Chell{}
+	chell := &Chell{
+		fieldAliasMapTagName: "json",
+	}
+
 	for _, opt := range opts {
 		err := opt(chell)
 		if err != nil {
@@ -65,7 +70,7 @@ func (c *Chell) DumpWithContext(ctx context.Context, dst, src interface{}) error
 			extractFilterNodeNames(c.onlyFieldFilters[0], nil),
 			extractFilterNodeNames(c.excludeFieldFilters[0], &extractOption{ignoreNodeWithChildren: true}))
 	} else {
-		toSchema := newSchema(dst)
+		toSchema := newSchema(dst).withFieldAliasMapTagName(c.fieldAliasMapTagName)
 		toSchema.setOnlyFields(extractFilterNodeNames(c.onlyFieldFilters[0], nil)...)
 		toSchema.setExcludeFields(extractFilterNodeNames(c.excludeFieldFilters[0], &extractOption{ignoreNodeWithChildren: true})...)
 		return c.dump(incrDumpDepthContext(ctx), toSchema, src)
@@ -215,7 +220,7 @@ func (c *Chell) dumpField(ctx context.Context, field *schemaField, value interfa
 
 func (c *Chell) dumpFieldNestedOne(ctx context.Context, field *schemaField, src interface{}) error {
 	val := reflect.New(indirectStructTypeP(reflect.TypeOf(field.Value())))
-	toNestedSchema := newSchema(val.Interface())
+	toNestedSchema := newSchema(val.Interface()).withFieldAliasMapTagName(c.fieldAliasMapTagName)
 
 	depth := dumpDepthFromContext(ctx)
 	toNestedSchema.setOnlyFields(field.nestedOnlyNames(c.onlyFieldFilters[depth])...)
@@ -293,7 +298,7 @@ func (c *Chell) dumpMany(ctx context.Context, dst, src interface{}, onlyFields, 
 		func(payload interface{}) (interface{}, error) {
 			index := payload.(int)
 			schemaPtr := reflect.New(schemaType)
-			toSchema := newSchema(schemaPtr.Interface())
+			toSchema := newSchema(schemaPtr.Interface()).withFieldAliasMapTagName(c.fieldAliasMapTagName)
 			toSchema.setOnlyFields(onlyFields...)
 			toSchema.setExcludeFields(excludeFields...)
 			val := rv.Index(index).Interface()

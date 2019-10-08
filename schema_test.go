@@ -55,7 +55,7 @@ func TestSchema(t *testing.T) {
 }
 
 func TestSchema_GetFields(t *testing.T) {
-	schema := newSchema(&UserSchema2{})
+	schema := newSchema(&UserSchema2{}).withFieldAliasMapTagName("json")
 	assert.ElementsMatch(t, []string{"Age", "ID", "Name", "School", "Async"}, filedNames(schema.availableFields()))
 
 	assert.ElementsMatch(t, []string{"Age", "ID", "Name", "School"}, filedNames(schema.syncFields()))
@@ -64,8 +64,17 @@ func TestSchema_GetFields(t *testing.T) {
 	schema.setOnlyFields("ID")
 	assert.ElementsMatch(t, []string{"ID"}, filedNames(schema.availableFields()))
 
+	schema.setOnlyFields("id")
+	assert.ElementsMatch(t, []string{"ID"}, filedNames(schema.availableFields()))
+
+	schema.setOnlyFields("ID", "NotFound")
+	assert.ElementsMatch(t, []string{"ID"}, filedNames(schema.availableFields()))
+
 	schema = newSchema(&UserSchema2{})
 	schema.setExcludeFields("ID", "Name", "School")
+	assert.ElementsMatch(t, []string{"Age", "Async"}, filedNames(schema.availableFields()))
+
+	schema.setExcludeFields("ID", "Name", "School", "NotFound")
 	assert.ElementsMatch(t, []string{"Age", "Async"}, filedNames(schema.availableFields()))
 }
 

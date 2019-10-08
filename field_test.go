@@ -18,6 +18,16 @@ func TestField_String(t *testing.T) {
 	assert.Equal(t, "FooSchema.Name", f.String())
 }
 
+func TestField_Alias(t *testing.T) {
+	type FooSchema struct {
+		Name string `json:"name"`
+	}
+
+	schema := newSchema(&FooSchema{}).withFieldAliasMapTagName("json")
+	f := newField(schema, schema.innerStruct().Field("Name"))
+	assert.Equal(t, "name", f.alias)
+}
+
 func TestField_IsRequired(t *testing.T) {
 	type FooSchema struct {
 		Name string
@@ -256,5 +266,22 @@ func BenchmarkNewField(b *testing.B) {
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		newField(schema, schema.innerStruct().Field("Name"))
+	}
+}
+
+func Test_parseAlias(t *testing.T) {
+	assert.Equal(t, "", parseAlias(""))
+	assert.Equal(t, "", parseAlias("-"))
+	assert.Equal(t, "id", parseAlias("id,empty"))
+	assert.Equal(t, "urlToken", parseAlias("urlToken,empty"))
+	assert.Equal(t, "url_token", parseAlias("url_token,empty"))
+	assert.Equal(t, "url-token", parseAlias(" url-token, empty "))
+}
+
+// Benchmark_parseAlias-4   	35453392	        34.5 ns/op
+func Benchmark_parseAlias(b *testing.B) {
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		parseAlias(" url-token, empty ")
 	}
 }
