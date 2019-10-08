@@ -62,7 +62,22 @@ func (f *schemaField) setValue(v interface{}) error {
 }
 
 func (f *schemaField) realInputValue(v interface{}) (interface{}, error) {
-	switch r := v.(type) {
+	var iv interface{}
+	rv := reflect.ValueOf(v)
+	switch rv.Kind() {
+	case reflect.Ptr:
+		iv = v
+	case reflect.Struct:
+		// input is `SomeStruct`
+		// but `*SomeStruct` implements `Valuer` interface.
+		tmpValue := reflect.New(rv.Type())
+		tmpValue.Elem().Set(rv)
+		iv = tmpValue.Interface()
+	default:
+		return v, nil
+	}
+
+	switch r := iv.(type) {
 	case driver.Valuer:
 		return r.Value()
 	case Valuer:

@@ -1,6 +1,7 @@
 package portal
 
 import (
+	"fmt"
 	"testing"
 	"time"
 
@@ -182,11 +183,24 @@ func (p *Person) Value() (interface{}, error) {
 	return p.Name, nil
 }
 
-type Timestamp int
+type Timestamp struct {
+	tm time.Time
+}
 
 func (t *Timestamp) SetValue(v interface{}) error {
-	*t = Timestamp(v.(time.Time).Unix())
+	switch timeValue := v.(type) {
+	case time.Time:
+		t.tm = timeValue
+	case *time.Time:
+		t.tm = *timeValue
+	default:
+		return fmt.Errorf("expect type `time.Time`, not `%T`", v)
+	}
 	return nil
+}
+
+func (t *Timestamp) Value() (interface{}, error) {
+	return t.tm, nil
 }
 
 func TestField_SetValue(t *testing.T) {
@@ -207,14 +221,29 @@ func TestField_SetValue(t *testing.T) {
 	assert.Equal(t, "foo", f.Value().(string))
 
 	f = newField(schema, schema.innerStruct().Field("Ts"))
-
 	now := time.Now()
 	assert.Nil(t, f.setValue(now))
-	assert.Equal(t, Timestamp(now.Unix()), *f.Value().(*Timestamp))
+	assert.Equal(t, Timestamp{now}, *f.Value().(*Timestamp))
+
+	f = newField(schema, schema.innerStruct().Field("Ts"))
+	assert.Nil(t, f.setValue(&Timestamp{now}))
+	assert.Equal(t, Timestamp{now}, *f.Value().(*Timestamp))
+
+	f = newField(schema, schema.innerStruct().Field("Ts"))
+	assert.Nil(t, f.setValue(Timestamp{now}))
+	assert.Equal(t, Timestamp{now}, *f.Value().(*Timestamp))
+
+	f = newField(schema, schema.innerStruct().Field("Ts2"))
+	assert.Nil(t, f.setValue(Timestamp{now}))
+	assert.Equal(t, Timestamp{now}, f.Value().(Timestamp))
+
+	f = newField(schema, schema.innerStruct().Field("Ts2"))
+	assert.Nil(t, f.setValue(&Timestamp{now}))
+	assert.Equal(t, Timestamp{now}, f.Value().(Timestamp))
 
 	f = newField(schema, schema.innerStruct().Field("Ts2"))
 	assert.Nil(t, f.setValue(now))
-	assert.Equal(t, Timestamp(now.Unix()), f.Value().(Timestamp))
+	assert.Equal(t, Timestamp{now}, f.Value().(Timestamp))
 }
 
 // BenchmarkNewField-4   	 3622506	       317 ns/op
