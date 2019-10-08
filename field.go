@@ -177,7 +177,7 @@ func (f *schemaField) tagHasOption(opt string) bool {
 
 func (f *schemaField) nestedOnlyNames(customFilters []*filterNode) (names []string) {
 	filterNames := extractFilterNodeNames(
-		customFilters, &extractOption{queryByParentName: f.Name()})
+		customFilters, &extractOption{queryByParentName: f.Name(), queryByParentNameAlias: f.alias})
 	if len(filterNames) > 0 {
 		return filterNames
 	} else {
@@ -197,7 +197,7 @@ func (f *schemaField) nestedOnlyNamesParsedFromTag() (names []string) {
 func (f *schemaField) nestedExcludeNames(customFilters []*filterNode) []string {
 	fieldNames := extractFilterNodeNames(
 		customFilters,
-		&extractOption{ignoreNodeWithChildren: true, queryByParentName: f.Name()},
+		&extractOption{ignoreNodeWithChildren: true, queryByParentName: f.Name(), queryByParentNameAlias: f.alias},
 	)
 	if len(fieldNames) > 0 {
 		return fieldNames

@@ -21,19 +21,27 @@ func TestExtractFilterNodeNames(t *testing.T) {
 	nodeE.Children = append(nodeE.Children, nodeF)
 
 	nodeG := &filterNode{Name: "G"}
+
+	nodeZ := &filterNode{Name: "z"}
+	nodeH := &filterNode{Name: "h", Parent: nodeZ}
+	nodeZ.Children = append(nodeZ.Children, nodeH)
+
 	nodesMap := map[int][]*filterNode{
-		0: {nodeA, nodeB, nodeE, nodeG},
-		1: {nodeC, nodeD, nodeF},
+		0: {nodeA, nodeB, nodeE, nodeG, nodeZ},
+		1: {nodeC, nodeD, nodeF, nodeH},
 	}
 
 	names := extractFilterNodeNames(nodesMap[0], &extractOption{ignoreNodeWithChildren: true})
 	asserter.Equal([]string{"A", "G"}, names)
 
 	names = extractFilterNodeNames(nodesMap[0], &extractOption{ignoreNodeWithChildren: false})
-	asserter.Equal([]string{"A", "B", "E", "G"}, names)
+	asserter.Equal([]string{"A", "B", "E", "G", "z"}, names)
 
 	names = extractFilterNodeNames(nodesMap[1], &extractOption{ignoreNodeWithChildren: false, queryByParentName: "B"})
 	asserter.Equal([]string{"C", "D"}, names)
+
+	names = extractFilterNodeNames(nodesMap[1], &extractOption{ignoreNodeWithChildren: false, queryByParentName: "Z", queryByParentNameAlias: "z"})
+	asserter.Equal([]string{"h"}, names)
 }
 
 func TestParseFilters(t *testing.T) {

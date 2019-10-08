@@ -27,7 +27,7 @@ func main() {
 
 	printFullFields(&task)
 	printWithOnlyFields(&task, "Title", "SimpleUser")
-	printWithOnlyFields(&task, "ID", "User[ID,Notifications[ID],AnotherNotifications[Title]]", "SimpleUser")
+	printWithOnlyFields(&task, "ID", "User[id,Notifications[ID],AnotherNotifications[Title]]", "simple_user[id]")
 	printMany()
 	printWithExcludeFields(&task, "Description", "ID", "User[Name,Notifications[ID,Content],AnotherNotifications], SimpleUser")
 	fmt.Printf("elapsed: %.1f ms\n", time.Since(start).Seconds()*1000)

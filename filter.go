@@ -31,6 +31,7 @@ func (node *filterNode) String() string {
 type extractOption struct {
 	ignoreNodeWithChildren bool
 	queryByParentName      string
+	queryByParentNameAlias string
 }
 
 func extractFilterNodeNames(nodes []*filterNode, opt *extractOption) []string {
@@ -44,7 +45,12 @@ func extractFilterNodeNames(nodes []*filterNode, opt *extractOption) []string {
 
 	names := make([]string, 0, len(nodes))
 	for _, n := range nodes {
-		if opt.queryByParentName != "" && n.Parent.Name != opt.queryByParentName {
+		var parentName string
+		if n.Parent != nil {
+			parentName = n.Parent.Name
+		}
+
+		if opt.queryByParentName != "" && parentName != opt.queryByParentName && parentName != opt.queryByParentNameAlias {
 			continue
 		}
 
