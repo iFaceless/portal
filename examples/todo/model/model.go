@@ -12,7 +12,8 @@ type NotificationModel struct {
 }
 
 type UserModel struct {
-	ID int
+	ID  int
+	Tag *string
 }
 
 func (u *UserModel) Fullname() string {
@@ -45,5 +46,6 @@ type TaskModel struct {
 }
 
 func (t *TaskModel) User() *UserModel {
-	return &UserModel{t.UserID}
+	tag := "user"
+	return &UserModel{ID: t.UserID, Tag: &tag}
 }

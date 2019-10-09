@@ -17,6 +17,7 @@ type NotiSchema struct {
 
 type UserSchema struct {
 	ID                   string           `json:"id,omitempty"`
+	Tag                  *string          `json:"tag,omitempty"`
 	Name                 string           `json:"name,omitempty" portal:"attr:Fullname"`
 	Notifications        []*NotiSchema    `json:"notifications,omitempty" portal:"nested"`
 	AnotherNotifications []*NotiSchema    `json:"another_notifications,omitempty" portal:"nested;attr:Notifications"`
