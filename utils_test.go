@@ -89,6 +89,14 @@ type Book struct {
 	name string
 }
 
+func (b Book) NotReturn() {
+
+}
+
+func (b Book) ReturnTooMany() (string, string, error) {
+	return "", "", nil
+}
+
 func (b Book) ShortName() string {
 	return b.name
 }
@@ -107,6 +115,18 @@ func (b *Book) GetContextKey(ctx context.Context) string {
 
 func (b *Book) Plus(ctx context.Context, v int) int {
 	return v + 100
+}
+
+func (b *Book) NoError() (string, error) {
+	return "no error", nil
+}
+
+func (b *Book) ReturnError() (string, error) {
+	return "", errors.New("error")
+}
+
+func (b *Book) LastReturnValueNotErrorType() (string, string) {
+	return "", ""
 }
 
 //nolint
@@ -143,6 +163,10 @@ func TestInvokeMethod(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, 200, ret)
 
+	ret, err = invokeStructMethod(ctx, book, "NoError")
+	assert.Nil(t, err)
+	assert.Equal(t, "no error", ret)
+
 	ret, err = invokeStructMethod(ctx, &book, "MethodNotFound")
 	assert.Errorf(t, err, "method 'MethodNotFound' not found in 'Book'")
 
@@ -153,6 +177,22 @@ func TestInvokeMethod(t *testing.T) {
 	_, err = invokeStructMethod(ctx, &book, "Plus", 1, 2)
 	assert.NotNil(t, err)
 	assert.Equal(t, "method 'Plus' must has 2 params: 3", err.Error())
+
+	_, err = invokeStructMethod(ctx, &book, "NotReturn")
+	assert.NotNil(t, err)
+	assert.Equal(t, "method 'NotReturn' must returns one result with an optional error", err.Error())
+
+	_, err = invokeStructMethod(ctx, &book, "ReturnTooMany")
+	assert.NotNil(t, err)
+	assert.Equal(t, "method 'ReturnTooMany' must returns one result with an optional error", err.Error())
+
+	_, err = invokeStructMethod(ctx, &book, "ReturnError")
+	assert.NotNil(t, err)
+	assert.Equal(t, "error", err.Error())
+
+	_, err = invokeStructMethod(ctx, &book, "LastReturnValueNotErrorType")
+	assert.NotNil(t, err)
+	assert.Equal(t, "the last return value of method 'LastReturnValueNotErrorType' must be of `error` type", err.Error())
 }
 
 //1000000	      1371 ns/op

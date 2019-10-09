@@ -2,9 +2,10 @@ package portal
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"reflect"
+
+	"github.com/pkg/errors"
 )
 
 func nestedValue(ctx context.Context, any interface{}, chainingAttrs []string) (interface{}, error) {
@@ -35,6 +36,18 @@ func nestedValue(ctx context.Context, any interface{}, chainingAttrs []string) (
 }
 
 // invokeStructMethod calls the specified method of given struct `any` and return results.
+// Note:
+// - Context param is optional
+// - Method must returns at least one value.
+// - Max number of return values is two, and the last one must be of `error` type.
+//
+// Supported method definitions:
+// - `func (f *Foo) Bar(v interface{}) error`
+// - `func (f *Foo) Bar(v interface{}) string`
+// - `func (f *Foo) Bar(ctx context.Context, v interface{}) error`
+// - `func (f *Foo) Bar(ctx context.Context, v interface{}) string`
+// - `func (f *Foo) Bar(ctx context.Context, v interface{}) (string, error)`
+// - `func (f *Foo) Bar(ctx context.Context, v interface{}) (string, error)`
 func invokeStructMethod(ctx context.Context, any interface{}, name string, args ...interface{}) (interface{}, error) {
 	structValue := reflect.ValueOf(any)
 	method, err := findStructMethod(structValue, name)
@@ -53,6 +66,23 @@ func invokeStructMethod(ctx context.Context, any interface{}, name string, args 
 	if numIn != len(args) && !methodType.IsVariadic() {
 		return reflect.ValueOf(nil), fmt.Errorf("method '%s' must has %d params: %d", name, numIn, len(args))
 	}
+
+	numOut := methodType.NumOut()
+	switch numOut {
+	case 1:
+		// Cases like:
+		// func (f *Foo) Bar() error
+		// func (f *Foo) Bar() string
+	case 2:
+		// Cases like:
+		// func (f *Foo) Bar() (string, error)
+		if !methodType.Out(1).Implements(reflect.TypeOf((*error)(nil)).Elem()) {
+			return reflect.ValueOf(nil), fmt.Errorf("the last return value of method '%s' must be of `error` type", name)
+		}
+	default:
+		return reflect.ValueOf(nil), fmt.Errorf("method '%s' must returns one result with an optional error", name)
+	}
+
 	in := make([]reflect.Value, len(args))
 	for i := 0; i < len(args); i++ {
 		var inType reflect.Type
@@ -69,7 +99,20 @@ func invokeStructMethod(ctx context.Context, any interface{}, name string, args 
 			return reflect.ValueOf(nil), fmt.Errorf("method '%s', param[%d] must be %s, not %s", name, i, inType, argType)
 		}
 	}
-	return (method.Call(in)[0]).Interface(), nil
+
+	outs := method.Call(in)
+	switch len(outs) {
+	case 1:
+		return outs[0].Interface(), nil
+	case 2:
+		err := outs[1].Interface()
+		if err != nil {
+			return nil, errors.WithStack(err.(error))
+		}
+		return outs[0].Interface(), nil
+	default:
+		panic(fmt.Errorf("unexpected results returned by method '%s'", name))
+	}
 }
 
 func findStructMethod(any reflect.Value, name string) (reflect.Value, error) {

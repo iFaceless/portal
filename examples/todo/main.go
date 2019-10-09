@@ -26,7 +26,7 @@ func main() {
 	}
 
 	printFullFields(&task)
-	printWithOnlyFields(&task, "Title", "SimpleUser")
+	printWithOnlyFields(&task, "Description")
 	printWithOnlyFields(&task, "ID", "User[id,Notifications[ID],AnotherNotifications[Title]]", "simple_user[id]")
 	printMany()
 	printWithExcludeFields(&task, "Description", "ID", "User[Name,Notifications[ID,Content],AnotherNotifications], SimpleUser")

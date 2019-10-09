@@ -36,7 +36,7 @@ type TaskSchema struct {
 	SimpleUser   *UserSchema `json:"simple_user,omitempty" portal:"nested;only:Name;attr:User"`
 }
 
-func (ts *TaskSchema) GetDescription(model *model.TaskModel) string {
+func (ts *TaskSchema) GetDescription(model *model.TaskModel) (string, error) {
 	time.Sleep(1 * time.Second)
-	return "Custom description"
+	return "Custom description", nil
 }

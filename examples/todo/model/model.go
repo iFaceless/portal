@@ -46,6 +46,6 @@ type TaskModel struct {
 }
 
 func (t *TaskModel) User() *UserModel {
-	tag := "user"
-	return &UserModel{ID: t.UserID, Tag: &tag}
+	//tag := "user"
+	return &UserModel{ID: t.UserID}
 }
