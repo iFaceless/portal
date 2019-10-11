@@ -2,25 +2,23 @@
 [![Coverage Status](https://coveralls.io/repos/github/iFaceless/portal/badge.svg?branch=master&branch=master)](https://coveralls.io/github/iFaceless/portal?branch=master)
 [![Go Report Card](https://goreportcard.com/badge/github.com/iFaceless/portal)](https://goreportcard.com/report/github.com/iFaceless/portal)
 
-[戳我看中文介绍](./README_CN.md)
-
-# What's portal?
+# PORTAL 介绍
 ![portal game](https://s2.ax1x.com/2019/09/28/u1TnEt.jpg)
 
-It's a lightweight package which simplifies Go object serialization. Inspired by [marshmallow](https://github.com/marshmallow-code/marshmallow), but with concurrency builtin for better performance.
+[portal](https://github.com/iFaceless/portal/) 是一个专注于 Go 语言中对象序列化的辅助框架，接口设计上深受 Python 社区中的 [marshmallow](https://github.com/marshmallow-code/marshmallow) 框架启发，但同时内建了并发支持，期望能够提高接口响应速度。
 
-[portal](https://github.com/iFaceless/portal/) can be used to serialize app-level objects to specified objects (schema structs). The serialized objects can be rendered to any standard formats like JSON for an HTTP API. Most importantly, if some fields of a schema have different data sources, portal could **spawn several goroutines to retrieve fields' data concurrently**.
+总体而言，它可以用来将应用层的数据模型对象（数据源可以是数据库、缓存、RPC 等）序列化成指定的 API Schema 结构体。然后用户可选择将序列化后的结构转换成 JSON 或者其它的格式供 HTTP API 返回。
 
-*Note that unlike [marshmallow](https://github.com/marshmallow-code/marshmallow), [portal](https://github.com/iFaceless/portal/) only focuses on object serialization. So, if you want to validate struct fields, please refer to  [go-playground/validator](https://github.com/go-playground/validator) or [asaskevich/govalidator](https://github.com/asaskevich/govalidator).*
+*需要注意的是，[marshmallow](https://github.com/marshmallow-code/marshmallow) 框架除了提供对象序列化的功能外，还支持非常灵活的表单字段校验。但是 [portal](https://github.com/iFaceless/portal/) 只关注核心的序列化功能，对于结构体字段校验，可以使用[go-playground/validator](https://github.com/go-playground/validator) 或者 [asaskevich/govalidator](https://github.com/asaskevich/govalidator) 框架。*
 
-**Not production ready yet, use with caution please.**
+**生产环境使用请谨慎，可能还有潜藏的 Bug 等待修复~**
 
-# Features
+# 核心功能
 
-1. Can be configured to fill data into multiple fields concurrently.
-1. Support flexible field filtering for any (nested) schemas.
-1. Automatically convert field data to the expected field type, no more boilerplate code.
-1. Simple and clean API.
+1. 可选择异步填充 Schema 结构体字段值的填充；
+1. 支持非常灵活的字段过滤功能；
+1. 自动尝试完成来源数据类型到目标数据类型的转换，无需更多的样板代码；
+1. 简洁易用的 API。
 
 # Install
 
@@ -28,14 +26,14 @@ It's a lightweight package which simplifies Go object serialization. Inspired by
 get get -u github.com/ifaceless/portal
 ```
 
-# Quickstart
+# 快速入门
 
-Full example can be found [here](./examples/todo).
+完整的示例可参考 [这里](./examples/todo).
 
-## Model Definitions
+## Model 定义
 
 <details>
-<summary>CLICK HERE | model.go</summary>
+<summary>点击此处展开 | model.go</summary>
 
 ```go
 type NotificationModel struct {
@@ -77,10 +75,10 @@ func (t *TaskModel) User() *UserModel {
 </details>
 
 
-## Schema Definitions
+## Schema 定义
 
 <details>
-	<summary>CLICK HERE | schema.go</summary>
+	<summary>点击此处展开 | schema.go</summary>
 	
 ```go
 type NotiSchema struct {
@@ -116,7 +114,7 @@ func (ts *TaskSchema) GetDescription(model *model.TaskModel) string {
 </details>
 
 
-## Serialization Examples
+## 序列化示例
 
 ```go
 package main
@@ -127,43 +125,42 @@ import (
 )
 
 func main() {
-	// log debug info
+	// 设置日志等级为调试模式，方便查看和排错
 	portal.SetDebug(true)
-	// set max worker pool size
+	// 设置全局 goroutine 池的最大值，避免启动过多 goroutine
 	portal.SetMaxPoolSize(1024)
-	// make sure to clean up.
+	// 最后要清理 goroutine 池，通知其退出
 	defer portal.CleanUp()
 
-	// write to a specified task schema
+	// 填充所有字段值
 	var taskSchema schema.TaskSchema
 	portal.Dump(&taskSchema, &taskModel)
 	// data: {"id":"1","title":"Finish your jobs.","description":"Custom description","user":{"id":"1","name":"user:1","notifications":[{"id":"0","title":"title_0","content":"content_0"}],"another_notifications":[{"id":"0","title":"title_0","content":"content_0"}]},"simple_user":{"name":"user:1"}}
 	data, _ := json.Marshal(taskSchema)
 
-	// select specified fields
+	// 选择填充部分字段值
 	portal.Dump(&taskSchema, &taskModel, portal.Only("Title", "SimpleUser"))
 	// data: {"title":"Finish your jobs.","simple_user":{"name":"user:1"}}
 	data, _ := json.Marshal(taskSchema)
 	
-	// select fields with alias defined in the json tag.
-	// actually, the default alias tag is `json`, `portal.FieldAliasMapTagName("json")` is optional.
+	// 可使用字段的 JSON 别名来选择，效果和 Schema Struct Name 一样
+	// 当然，默认就是 JSON；也可以选择如 `yaml` 等。
 	portal.Dump(&taskSchema, &taskModel, portal.Only("title", "SimpleUser"), portal.FieldAliasMapTagName("json"))
 	// data: {"title":"Finish your jobs.","simple_user":{"name":"user:1"}}
 	data, _ := json.Marshal(taskSchema)
 
-	// you can keep any fields for any nested schemas
-	// multiple fields are separated with ','
-	// nested fields are wrapped with '[' and ']'
+	// 可以选择保留嵌套的 Schema 字段值
+	// 多个字段请用逗号 `,` 分隔；嵌套字段包含在 `[]` 中
 	portal.Dump(&taskSchema, &taskModel, portal.Only("ID", "User[ID,Notifications[ID],AnotherNotifications[Title]]", "SimpleUser"))
 	// data: {"id":"1","user":{"id":"1","notifications":[{"id":"0"}],"another_notifications":[{"title":"title_0"}]},"simple_user":{"name":"user:1"}}
 	data, _ := json.Marshal(taskSchema)
 
-	// ignore specified fields
+	// 忽略指定的字段（依然支持非常灵活的字段过滤规则）
 	portal.Dump(&taskSchema, &taskModel, portal.Exclude("Description", "ID", "User[Name,Notifications[ID,Content],AnotherNotifications], SimpleUser"))
 	// data: {"title":"Finish your jobs.","user":{"id":"1","notifications":[{"title":"title_0"}]}}
 	data, _ := json.Marshal(taskSchema)
 
-	// dump multiple tasks
+	// 填充多个 Schema，会在多个 goroutine 中并发完成
 	var taskSchemas []schema.TaskSchema
 	portal.Dump(&taskSchemas, &taskModels, portal.Only("ID", "Title", "User[Name]"))
 	// data: [{"id":"0","title":"Task #1","user":{"name":"user:100"}},{"id":"1","title":"Task #2","user":{"name":"user:101"}}]
@@ -172,9 +169,9 @@ func main() {
 
 ```
 
-To learn more about [portal](https://github.com/iFaceless/portal), please read the [User Guide](./USERGUIDE.md)~ 
+更多使用细节，请参考 [使用指南](./USERGUIDE.md)~ 
 
-# Core APIs
+# 核心 APIs
 
 ```go
 func New(opts ...Option) (*Chell, error)
@@ -186,4 +183,4 @@ func CleanUp()
 ```
 # License
 
-[portal](https://github.com/iFaceless/portal) is licensed under the [MIT license](./LICENSE). Please feel free and have fun~
+[portal](https://github.com/iFaceless/portal) 采用 [MIT LICENSE](./LICENSE)。
