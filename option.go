@@ -54,6 +54,7 @@ func FieldAliasMapTagName(tag string) Option {
 	}
 }
 
+// DisableConcurrency disables concurrency strategy.
 func DisableConcurrency() Option {
 	return func(c *Chell) error {
 		c.disableConcurrency = true

@@ -171,6 +171,12 @@ func main() {
 
 更多使用细节，请参考 [使用指南](./USERGUIDE.md)~ 
 
+# 并发策略控制
+
+1. 当某个 Schema 结构体字段标记了 `portal:"async"` 标签时会异步填充字段值；
+1. 当序列化 Schema 列表时，会分析 Schema 中有无标记了 `async` 的字段，如果存在的话，则使用并发填充策略；否则只在当前 goroutine 中完成序列化；
+1. 可以在 Dump 时添加 `portal.DisableConcurrency()` 禁用并发序列化的功能。
+
 # 核心 APIs
 
 ```go

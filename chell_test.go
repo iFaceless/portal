@@ -52,7 +52,7 @@ type NotiSchema struct {
 type UserSchema struct {
 	ID                   string        `json:"id,omitempty"`
 	Name                 string        `json:"name,omitempty" portal:"attr:Fullname"`
-	Notifications        []*NotiSchema `json:"notifications,omitempty" portal:"nested"`
+	Notifications        []*NotiSchema `json:"notifications,omitempty" portal:"nested;async"`
 	AnotherNotifications []*NotiSchema `json:"another_notifications,omitempty" portal:"nested;attr:Notifications"`
 }
 
@@ -109,6 +109,13 @@ func TestDumpOneFilterOnlyFields(t *testing.T) {
 
 	data, _ = json.Marshal(taskSchema2)
 	assert.Equal(t, `{"id":"1","user":{"id":"1","notifications":[{"id":"0"}],"another_notifications":[{"title":"title_0"}]},"simple_user":{"name":"user:1"}}`, string(data))
+
+	var taskSchema3 TaskSchema
+	err = Dump(&taskSchema3, &task, Only("title", "simple_user"), FieldAliasMapTagName("json"))
+	assert.Nil(t, err)
+
+	data, _ = json.Marshal(taskSchema)
+	assert.Equal(t, `{"title":"Finish your jobs.","simple_user":{"name":"user:1"}}`, string(data))
 }
 
 func TestDumpOneExcludeFields(t *testing.T) {
@@ -142,6 +149,12 @@ func TestDumpMany(t *testing.T) {
 	assert.Nil(t, err)
 
 	data, _ := json.Marshal(taskSchemas)
+	assert.Equal(t, `[{"id":"0","title":"Task #1","user":{"name":"user:100"}},{"id":"1","title":"Task #2","user":{"name":"user:101"}}]`, string(data))
+
+	err = Dump(&taskSchemas, &tasks, Only("ID", "Title", "User[Name]"), DisableConcurrency())
+	assert.Nil(t, err)
+
+	data, _ = json.Marshal(taskSchemas)
 	assert.Equal(t, `[{"id":"0","title":"Task #1","user":{"name":"user:100"}},{"id":"1","title":"Task #2","user":{"name":"user:101"}}]`, string(data))
 }
 

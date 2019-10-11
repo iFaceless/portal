@@ -173,6 +173,12 @@ func main() {
 
 To learn more about [portal](https://github.com/iFaceless/portal), please read the [User Guide](./USERGUIDE.md)~ 
 
+# Concurrency Strategy
+
+1. Any fields tagged with `portal:"async"` will be serialized asynchronously.
+1. When dumping to multiple schemas, portal will do it concurrently if any fields in the schema are tagged with `protal:"async"`.
+1. You can always disable concurrency strategy with option `portal.DisableConcurrency()`.
+
 # Core APIs
 
 ```go
