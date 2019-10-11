@@ -9,7 +9,7 @@
 
 总体而言，它可以用来将应用层的数据模型对象（数据源可以是数据库、缓存、RPC 等）序列化成指定的 API Schema 结构体。然后用户可选择将序列化后的结构转换成 JSON 或者其它的格式供 HTTP API 返回。
 
-*需要注意的是，[marshmallow](https://github.com/marshmallow-code/marshmallow) 框架除了提供对象序列化的功能外，还支持非常灵活的表单字段校验。但是 [portal](https://github.com/iFaceless/portal/) 只关注核心的序列化功能，对于结构体字段校验，可以使用[go-playground/validator](https://github.com/go-playground/validator) 或者 [asaskevich/govalidator](https://github.com/asaskevich/govalidator) 框架。*
+*需要注意的是，[marshmallow](https://github.com/marshmallow-code/marshmallow) 框架除了提供对象序列化的功能外，还支持非常灵活的表单字段校验。但是 [portal](https://github.com/iFaceless/portal/) 只关注核心的序列化功能，对于结构体字段校验，可以使用 [go-playground/validator](https://github.com/go-playground/validator) 或者 [asaskevich/govalidator](https://github.com/asaskevich/govalidator) 框架。*
 
 **生产环境使用请谨慎，可能还有潜藏的 Bug 等待修复~**
 
@@ -20,7 +20,7 @@
 1. 自动尝试完成来源数据类型到目标数据类型的转换，无需更多的样板代码；
 1. 简洁易用的 API。
 
-# Install
+# 安装
 
 ```
 get get -u github.com/ifaceless/portal

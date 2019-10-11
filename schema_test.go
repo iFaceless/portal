@@ -2,6 +2,7 @@ package portal
 
 import (
 	"context"
+	"reflect"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -21,7 +22,7 @@ type UserSchema2 struct {
 	PersonSchema
 	Name   string        `portal:"meth:GetName"`
 	School *SchoolSchema `portal:"nested"`
-	Async  int           `portal:"async"`
+	Async  int           `json:"async" portal:"async"`
 }
 
 func (u *UserSchema2) GetName(user interface{}) interface{} {
@@ -54,12 +55,24 @@ func TestSchema(t *testing.T) {
 	assert.Equal(t, &SchoolSchema{Name: "test school", Addr: ""}, val)
 }
 
+func Test_hasAsyncFields(t *testing.T) {
+	assert.False(t, hasAsyncFields(reflect.TypeOf(&PersonSchema{}), nil, nil))
+	assert.False(t, hasAsyncFields(reflect.TypeOf(PersonSchema{}), nil, nil))
+	assert.True(t, hasAsyncFields(reflect.TypeOf(UserSchema2{}), nil, nil))
+	assert.True(t, hasAsyncFields(reflect.TypeOf(&UserSchema2{}), nil, nil))
+	assert.True(t, hasAsyncFields(reflect.TypeOf(&UserSchema2{}), []string{"async"}, nil))
+	assert.True(t, hasAsyncFields(reflect.TypeOf(&UserSchema2{}), []string{"Async"}, nil))
+	assert.False(t, hasAsyncFields(reflect.TypeOf(&UserSchema2{}), []string{"Name"}, nil))
+	assert.False(t, hasAsyncFields(reflect.TypeOf(&UserSchema2{}), []string{}, []string{"Async"}))
+	assert.False(t, hasAsyncFields(reflect.TypeOf(&UserSchema2{}), []string{}, []string{"async"}))
+}
+
 func TestSchema_GetFields(t *testing.T) {
 	schema := newSchema(&UserSchema2{}).withFieldAliasMapTagName("json")
 	assert.ElementsMatch(t, []string{"Age", "ID", "Name", "School", "Async"}, filedNames(schema.availableFields()))
 
-	assert.ElementsMatch(t, []string{"Age", "ID", "Name", "School"}, filedNames(schema.syncFields()))
-	assert.ElementsMatch(t, []string{"Async"}, filedNames(schema.asyncFields()))
+	assert.ElementsMatch(t, []string{"Age", "ID", "Name", "School"}, filedNames(schema.syncFields(false)))
+	assert.ElementsMatch(t, []string{"Async"}, filedNames(schema.asyncFields(false)))
 
 	schema.setOnlyFields("ID")
 	assert.ElementsMatch(t, []string{"ID"}, filedNames(schema.availableFields()))

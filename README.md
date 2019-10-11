@@ -169,7 +169,6 @@ func main() {
 	// data: [{"id":"0","title":"Task #1","user":{"name":"user:100"}},{"id":"1","title":"Task #2","user":{"name":"user:101"}}]
 	data, _ := json.Marshal(taskSchema)
 }
-
 ```
 
 To learn more about [portal](https://github.com/iFaceless/portal), please read the [User Guide](./USERGUIDE.md)~ 

@@ -53,3 +53,10 @@ func FieldAliasMapTagName(tag string) Option {
 		return nil
 	}
 }
+
+func DisableConcurrency() Option {
+	return func(c *Chell) error {
+		c.disableConcurrency = true
+		return nil
+	}
+}

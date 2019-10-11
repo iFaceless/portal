@@ -11,6 +11,7 @@ import (
 type Chell struct {
 	// json, yaml etc.
 	fieldAliasMapTagName string
+	disableConcurrency   bool
 	onlyFieldFilters     map[int][]*filterNode
 	excludeFieldFilters  map[int][]*filterNode
 }
@@ -124,7 +125,7 @@ func (c *Chell) dump(ctx context.Context, dst *schema, src interface{}) error {
 }
 
 func (c *Chell) dumpSyncFields(ctx context.Context, dst *schema, src interface{}) error {
-	syncFields := dst.syncFields()
+	syncFields := dst.syncFields(c.disableConcurrency)
 	if len(syncFields) == 0 {
 		return nil
 	}
@@ -147,7 +148,7 @@ func (c *Chell) dumpSyncFields(ctx context.Context, dst *schema, src interface{}
 }
 
 func (c *Chell) dumpAsyncFields(ctx context.Context, dst *schema, src interface{}) error {
-	asyncFields := dst.asyncFields()
+	asyncFields := dst.asyncFields(c.disableConcurrency)
 	if len(asyncFields) == 0 {
 		return nil
 	}
@@ -283,13 +284,48 @@ func (c *Chell) dumpMany(ctx context.Context, dst, src interface{}, onlyFields, 
 	schemaSlice.Set(reflect.MakeSlice(schemaSlice.Type(), rv.Len(), rv.Cap()))
 	schemaType := indirectStructTypeP(schemaSlice.Type())
 
+	if c.disableConcurrency || !hasAsyncFields(schemaType, onlyFields, excludeFields) {
+		return c.dumpManySynchronously(ctx, schemaType, schemaSlice, rv, onlyFields, excludeFields)
+	}
+
+	return c.dumpManyConcurrently(ctx, schemaType, schemaSlice, rv, onlyFields, excludeFields)
+}
+
+func (c *Chell) dumpManySynchronously(ctx context.Context, schemaType reflect.Type, dst, src reflect.Value, onlyFields, excludeFields []string) error {
+	logger.Debugf("[portal.dumpManySynchronously] '%s' -> '%s'", src, dst)
+	for i := 0; i < src.Len(); i++ {
+		schemaPtr := reflect.New(schemaType)
+		toSchema := newSchema(schemaPtr.Interface()).withFieldAliasMapTagName(c.fieldAliasMapTagName)
+		toSchema.setOnlyFields(onlyFields...)
+		toSchema.setExcludeFields(excludeFields...)
+		val := src.Index(i).Interface()
+		err := c.dump(incrDumpDepthContext(ctx), toSchema, val)
+		if err != nil {
+			return errors.WithStack(err)
+		}
+
+		elem := dst.Index(i)
+		switch elem.Kind() {
+		case reflect.Struct:
+			elem.Set(reflect.Indirect(schemaPtr))
+		case reflect.Ptr:
+			elem.Set(schemaPtr)
+		default:
+			return errors.Errorf("unsupported schema field type '%s', expected a struct or a pointer to struct", elem.Type().Kind())
+		}
+	}
+	return nil
+}
+
+func (c *Chell) dumpManyConcurrently(ctx context.Context, schemaType reflect.Type, dst, src reflect.Value, onlyFields, excludeFields []string) error {
+	logger.Debugf("[portal.dumpManyConcurrently] '%s' -> '%s'", src, dst)
 	type Result struct {
 		index     int
 		schemaPtr reflect.Value
 	}
 
-	payloads := make([]interface{}, 0, rv.Len())
-	for i := 0; i < rv.Len(); i++ {
+	payloads := make([]interface{}, 0, src.Len())
+	for i := 0; i < src.Len(); i++ {
 		payloads = append(payloads, i)
 	}
 
@@ -301,7 +337,7 @@ func (c *Chell) dumpMany(ctx context.Context, dst, src interface{}, onlyFields, 
 			toSchema := newSchema(schemaPtr.Interface()).withFieldAliasMapTagName(c.fieldAliasMapTagName)
 			toSchema.setOnlyFields(onlyFields...)
 			toSchema.setExcludeFields(excludeFields...)
-			val := rv.Index(index).Interface()
+			val := src.Index(index).Interface()
 			err := c.dump(incrDumpDepthContext(ctx), toSchema, val)
 			return &Result{index: index, schemaPtr: schemaPtr}, err
 		},
@@ -316,7 +352,7 @@ func (c *Chell) dumpMany(ctx context.Context, dst, src interface{}, onlyFields, 
 		}
 
 		r := jobResult.Data.(*Result)
-		elem := schemaSlice.Index(r.index)
+		elem := dst.Index(r.index)
 		switch elem.Kind() {
 		case reflect.Struct:
 			elem.Set(reflect.Indirect(r.schemaPtr))

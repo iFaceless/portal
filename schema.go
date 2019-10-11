@@ -56,6 +56,14 @@ func newSchema(v interface{}) *schema {
 	return sch
 }
 
+func hasAsyncFields(schemaType reflect.Type, onlyFields, excludeFields []string) bool {
+	// TODO: try to cache the result
+	schema := newSchema(reflect.New(schemaType).Interface())
+	schema.setOnlyFields(onlyFields...)
+	schema.setExcludeFields(excludeFields...)
+	return len(schema.asyncFields(false)) > 0
+}
+
 func (s *schema) withFieldAliasMapTagName(t string) *schema {
 	s.fieldAliasMapTagName = t
 	return s
@@ -83,16 +91,22 @@ func (s *schema) availableFields() []*schemaField {
 	return fields
 }
 
-func (s *schema) syncFields() (fields []*schemaField) {
+func (s *schema) syncFields(disableConcurrency bool) (fields []*schemaField) {
 	for _, f := range s.availableFields() {
-		if !f.async() {
+		if disableConcurrency {
+			fields = append(fields, f)
+		} else if !f.async() {
 			fields = append(fields, f)
 		}
 	}
 	return
 }
 
-func (s *schema) asyncFields() (fields []*schemaField) {
+func (s *schema) asyncFields(disableConcurrency bool) (fields []*schemaField) {
+	if disableConcurrency {
+		return
+	}
+
 	for _, f := range s.availableFields() {
 		if f.async() {
 			fields = append(fields, f)

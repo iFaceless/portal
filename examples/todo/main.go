@@ -19,17 +19,17 @@ func main() {
 	portal.SetMaxPoolSize(1024)
 	portal.SetDebug(true)
 
-	task := model.TaskModel{
-		ID:     1,
-		UserID: 1,
-		Title:  "Finish your jobs.",
-	}
+	//task := model.TaskModel{
+	//	ID:     1,
+	//	UserID: 1,
+	//	Title:  "Finish your jobs.",
+	//}
 
-	printFullFields(&task)
-	printWithOnlyFields(&task, "Description")
-	printWithOnlyFields(&task, "ID", "User[id,Notifications[ID],AnotherNotifications[Title]]", "simple_user[id]")
+	//printFullFields(&task)
+	//printWithOnlyFields(&task, "Description")
+	//printWithOnlyFields(&task, "ID", "User[id,Notifications[ID],AnotherNotifications[Title]]", "simple_user[id]")
 	printMany()
-	printWithExcludeFields(&task, "Description", "ID", "User[Name,Notifications[ID,Content],AnotherNotifications], SimpleUser")
+	//printWithExcludeFields(&task, "Description", "ID", "User[Name,Notifications[ID,Content],AnotherNotifications], SimpleUser")
 	fmt.Printf("elapsed: %.1f ms\n", time.Since(start).Seconds()*1000)
 }
 
@@ -78,7 +78,7 @@ func printMany() {
 		})
 	}
 
-	err := portal.Dump(&taskSchemas, &tasks, portal.Only("ID", "Title", "User[Name]", "Description"))
+	err := portal.Dump(&taskSchemas, &tasks, portal.Only("ID", "Title", "User[Name]", "Description"), portal.DisableConcurrency())
 	if err != nil {
 		panic(err)
 	}
