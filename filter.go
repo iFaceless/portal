@@ -9,8 +9,8 @@ import (
 )
 
 var (
-	ErrUnmatchedBrackets  = errors.New("unmatched brackets")
-	ErrPrefixIsNotBracket = errors.New("filter string must starts with '['")
+	errUnmatchedBrackets  = errors.New("unmatched brackets")
+	errPrefixIsNotBracket = errors.New("filter string must starts with '['")
 )
 
 var (
@@ -78,7 +78,7 @@ func parseFilterString(s string) (map[int][]*filterNode, error) {
 	}
 
 	if !strings.HasPrefix(s, "[") {
-		return nil, ErrPrefixIsNotBracket
+		return nil, errPrefixIsNotBracket
 	}
 
 	cachedResult, ok := cachedFilterResultMap.Load(s)
@@ -108,21 +108,21 @@ func checkBracketPairs(s []byte) error {
 		case ']':
 			x, err := stack.pop()
 			if err != nil {
-				return ErrUnmatchedBrackets
+				return errUnmatchedBrackets
 			}
 			if xc, ok := x.(byte); ok {
 				if xc == '[' {
 					continue
 				}
 			}
-			return ErrUnmatchedBrackets
+			return errUnmatchedBrackets
 		default:
 			continue
 		}
 	}
 
 	if stack.size() > 0 {
-		return ErrUnmatchedBrackets
+		return errUnmatchedBrackets
 	}
 
 	return nil

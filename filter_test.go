@@ -137,7 +137,7 @@ func TestParseFilterString_BoundaryConditions(t *testing.T) {
 	asserter.Nil(node)
 
 	_, err = parseFilterString("A")
-	asserter.Equal(ErrPrefixIsNotBracket, err)
+	asserter.Equal(errPrefixIsNotBracket, err)
 }
 
 func Test_checkBracketPair(t *testing.T) {
@@ -145,7 +145,7 @@ func Test_checkBracketPair(t *testing.T) {
 	asserter.Nil(checkBracketPairs([]byte("speaker")))
 	asserter.Nil(checkBracketPairs([]byte("speaker[]")))
 	asserter.Nil(checkBracketPairs([]byte("speaker[name,age[user[id]]]")))
-	asserter.Equal(ErrUnmatchedBrackets, checkBracketPairs([]byte("speaker[")))
-	asserter.Equal(ErrUnmatchedBrackets, checkBracketPairs([]byte("speaker]")))
-	asserter.Equal(ErrUnmatchedBrackets, checkBracketPairs([]byte("speaker[user[id]]]")))
+	asserter.Equal(errUnmatchedBrackets, checkBracketPairs([]byte("speaker[")))
+	asserter.Equal(errUnmatchedBrackets, checkBracketPairs([]byte("speaker]")))
+	asserter.Equal(errUnmatchedBrackets, checkBracketPairs([]byte("speaker[user[id]]]")))
 }

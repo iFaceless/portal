@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/pkg/errors"
+
 	"github.com/stretchr/testify/assert"
 )
 
@@ -34,9 +36,10 @@ func (u *UserModel) Notifications() (result []*NotificationModel) {
 }
 
 type TaskModel struct {
-	ID     int
-	UserID int
-	Title  string
+	ID             int
+	UserID         int
+	Title          string
+	ErrDescription ErrField
 }
 
 func (t *TaskModel) User() *UserModel {
@@ -62,6 +65,7 @@ type TaskSchema struct {
 	Description string      `json:"description,omitempty" portal:"meth:GetDescription"`
 	User        *UserSchema `json:"user,omitempty" portal:"nested;async"`
 	SimpleUser  *UserSchema `json:"simple_user,omitempty" portal:"async;nested;only:Name;attr:User"`
+	Unknown     string      `json:"unknown"`
 }
 
 func (ts *TaskSchema) GetDescription(model *TaskModel) string {
@@ -80,13 +84,13 @@ func TestDumpOneWithAllFields(t *testing.T) {
 	assert.Nil(t, err)
 
 	data, _ := json.Marshal(taskSchema)
-	assert.Equal(t, `{"id":"1","title":"Finish your jobs.","description":"Custom description","user":{"id":"1","name":"user:1","notifications":[{"id":"0","title":"title_0","content":"content_0"}],"another_notifications":[{"id":"0","title":"title_0","content":"content_0"}]},"simple_user":{"name":"user:1"}}`, string(data))
+	assert.Equal(t, `{"id":"1","title":"Finish your jobs.","description":"Custom description","user":{"id":"1","name":"user:1","notifications":[{"id":"0","title":"title_0","content":"content_0"}],"another_notifications":[{"id":"0","title":"title_0","content":"content_0"}]},"simple_user":{"name":"user:1"},"unknown":""}`, string(data))
 
 	var taskSchema1 *TaskSchema
 	err = Dump(&taskSchema1, &task)
 	assert.Nil(t, err)
 	data1, _ := json.Marshal(taskSchema)
-	assert.Equal(t, `{"id":"1","title":"Finish your jobs.","description":"Custom description","user":{"id":"1","name":"user:1","notifications":[{"id":"0","title":"title_0","content":"content_0"}],"another_notifications":[{"id":"0","title":"title_0","content":"content_0"}]},"simple_user":{"name":"user:1"}}`, string(data1))
+	assert.Equal(t, `{"id":"1","title":"Finish your jobs.","description":"Custom description","user":{"id":"1","name":"user:1","notifications":[{"id":"0","title":"title_0","content":"content_0"}],"another_notifications":[{"id":"0","title":"title_0","content":"content_0"}]},"simple_user":{"name":"user:1"},"unknown":""}`, string(data1))
 }
 
 func TestDumpOneFilterOnlyFields(t *testing.T) {
@@ -101,21 +105,21 @@ func TestDumpOneFilterOnlyFields(t *testing.T) {
 	assert.Nil(t, err)
 
 	data, _ := json.Marshal(taskSchema)
-	assert.Equal(t, `{"title":"Finish your jobs.","simple_user":{"name":"user:1"}}`, string(data))
+	assert.Equal(t, `{"title":"Finish your jobs.","simple_user":{"name":"user:1"},"unknown":""}`, string(data))
 
 	var taskSchema2 TaskSchema
 	err = Dump(&taskSchema2, &task, Only("ID", "User[ID,Notifications[ID],AnotherNotifications[Title]]", "SimpleUser"))
 	assert.Nil(t, err)
 
 	data, _ = json.Marshal(taskSchema2)
-	assert.Equal(t, `{"id":"1","user":{"id":"1","notifications":[{"id":"0"}],"another_notifications":[{"title":"title_0"}]},"simple_user":{"name":"user:1"}}`, string(data))
+	assert.Equal(t, `{"id":"1","user":{"id":"1","notifications":[{"id":"0"}],"another_notifications":[{"title":"title_0"}]},"simple_user":{"name":"user:1"},"unknown":""}`, string(data))
 
 	var taskSchema3 TaskSchema
 	err = Dump(&taskSchema3, &task, Only("title", "simple_user"), FieldAliasMapTagName("json"))
 	assert.Nil(t, err)
 
 	data, _ = json.Marshal(taskSchema)
-	assert.Equal(t, `{"title":"Finish your jobs.","simple_user":{"name":"user:1"}}`, string(data))
+	assert.Equal(t, `{"title":"Finish your jobs.","simple_user":{"name":"user:1"},"unknown":""}`, string(data))
 }
 
 func TestDumpOneExcludeFields(t *testing.T) {
@@ -130,7 +134,7 @@ func TestDumpOneExcludeFields(t *testing.T) {
 	assert.Nil(t, err)
 
 	data, _ := json.Marshal(taskSchema)
-	assert.Equal(t, `{"title":"Finish your jobs.","user":{"id":"1","notifications":[{"title":"title_0"}]}}`, string(data))
+	assert.Equal(t, `{"title":"Finish your jobs.","user":{"id":"1","notifications":[{"title":"title_0"}]},"unknown":""}`, string(data))
 }
 
 func TestDumpMany(t *testing.T) {
@@ -149,26 +153,43 @@ func TestDumpMany(t *testing.T) {
 	assert.Nil(t, err)
 
 	data, _ := json.Marshal(taskSchemas)
-	assert.Equal(t, `[{"id":"0","title":"Task #1","user":{"name":"user:100"}},{"id":"1","title":"Task #2","user":{"name":"user:101"}}]`, string(data))
+	assert.Equal(t, `[{"id":"0","title":"Task #1","user":{"name":"user:100"},"unknown":""},{"id":"1","title":"Task #2","user":{"name":"user:101"},"unknown":""}]`, string(data))
 
 	err = Dump(&taskSchemas, &tasks, Only("ID", "Title", "User[Name]"), DisableConcurrency())
 	assert.Nil(t, err)
 
 	data, _ = json.Marshal(taskSchemas)
-	assert.Equal(t, `[{"id":"0","title":"Task #1","user":{"name":"user:100"}},{"id":"1","title":"Task #2","user":{"name":"user:101"}}]`, string(data))
+	assert.Equal(t, `[{"id":"0","title":"Task #1","user":{"name":"user:100"},"unknown":""},{"id":"1","title":"Task #2","user":{"name":"user:101"},"unknown":""}]`, string(data))
+}
+
+type ErrField struct {
+	inner string
+}
+
+func (ef ErrField) Value() (interface{}, error) {
+	return "", errors.New("err field")
 }
 
 func TestDumpError(t *testing.T) {
 	task := TaskModel{
-		ID:     1,
-		UserID: 1,
-		Title:  "Finish your jobs.",
+		ID:             1,
+		UserID:         1,
+		ErrDescription: ErrField{"err field"},
 	}
 
-	var taskSchema TaskSchema
-	err := Dump(&taskSchema, &task, Only("Title", "SimpleUser["))
+	dst := struct {
+		Title string
+		ID    int
+		Desc  string `portal:"attr:ErrDescription"`
+	}{}
+
+	err := Dump(&dst, &task, Only("Title", "Desc["))
 	assert.NotNil(t, err)
-	assert.Equal(t, ErrUnmatchedBrackets.Error(), err.Error())
+	assert.Equal(t, errUnmatchedBrackets.Error(), err.Error())
+
+	err = Dump(&dst, &task, Only("Desc"))
+	assert.NotNil(t, err)
+	assert.Equal(t, "err field", err.Error())
 }
 
 func TestChellDumpOk(t *testing.T) {
@@ -184,7 +205,7 @@ func TestChellDumpOk(t *testing.T) {
 	err := chell.Dump(&taskSchema, &task)
 	assert.Nil(t, err)
 	data, _ := json.Marshal(taskSchema)
-	assert.Equal(t, `{"title":"Finish your jobs.","simple_user":{"name":"user:1"}}`, string(data))
+	assert.Equal(t, `{"title":"Finish your jobs.","simple_user":{"name":"user:1"},"unknown":""}`, string(data))
 
 	chell, _ = New()
 	_ = chell.SetExcludeFields("Description", "ID", "User[Name,Notifications[ID,Content],AnotherNotifications], SimpleUser")
@@ -192,7 +213,7 @@ func TestChellDumpOk(t *testing.T) {
 	err = chell.Dump(&taskSchema2, &task)
 	assert.Nil(t, err)
 	data, _ = json.Marshal(taskSchema2)
-	assert.Equal(t, `{"title":"Finish your jobs.","user":{"id":"1","notifications":[{"title":"title_0"}]}}`, string(data))
+	assert.Equal(t, `{"title":"Finish your jobs.","user":{"id":"1","notifications":[{"title":"title_0"}]},"unknown":""}`, string(data))
 }
 
 func TestChellBoundaryConditions(t *testing.T) {

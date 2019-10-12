@@ -19,7 +19,7 @@ type Chell struct {
 // New creates a new Chell instance with a worker pool waiting to be feed.
 // It's highly recommended to call function `portal.Dump()` or
 // `portal.DumpWithContext()` directly.
-func New(opts ...Option) (*Chell, error) {
+func New(opts ...option) (*Chell, error) {
 	chell := &Chell{
 		fieldAliasMapTagName: "json",
 	}
@@ -36,13 +36,13 @@ func New(opts ...Option) (*Chell, error) {
 
 // Dump dumps src data to dst. You can filter fields with
 // optional config `portal.Only` or `portal.Exclude`.
-func Dump(dst, src interface{}, opts ...Option) error {
+func Dump(dst, src interface{}, opts ...option) error {
 	return DumpWithContext(context.TODO(), dst, src, opts...)
 }
 
 // DumpWithContext dumps src data to dst with an extra context param.
 // You can filter fields with optional config `portal.Only` or `portal.Exclude`.
-func DumpWithContext(ctx context.Context, dst, src interface{}, opts ...Option) error {
+func DumpWithContext(ctx context.Context, dst, src interface{}, opts ...option) error {
 	chell, err := New(opts...)
 	if err != nil {
 		return errors.WithStack(err)

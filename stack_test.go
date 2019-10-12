@@ -34,8 +34,8 @@ func TestStack(t *testing.T) {
 	asserter.Nil(err)
 
 	_, err = stack.pop()
-	asserter.Equal(ErrStackIsEmpty, err)
+	asserter.Equal(errStackIsEmpty, err)
 
 	_, err = stack.top()
-	asserter.Equal(ErrStackIsEmpty, err)
+	asserter.Equal(errStackIsEmpty, err)
 }

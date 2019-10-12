@@ -2,7 +2,7 @@ package portal
 
 import "github.com/pkg/errors"
 
-var ErrStackIsEmpty = errors.New("stack is empty")
+var errStackIsEmpty = errors.New("stack is empty")
 
 type stack struct {
 	elements []interface{}
@@ -26,7 +26,7 @@ func (stack *stack) push(x interface{}) {
 
 func (stack *stack) top() (interface{}, error) {
 	if stack.size() == 0 {
-		return nil, ErrStackIsEmpty
+		return nil, errStackIsEmpty
 	}
 
 	return stack.elements[stack.size()-1], nil
@@ -34,7 +34,7 @@ func (stack *stack) top() (interface{}, error) {
 
 func (stack *stack) pop() (interface{}, error) {
 	if stack.size() == 0 {
-		return nil, ErrStackIsEmpty
+		return nil, errStackIsEmpty
 	}
 
 	x := stack.elements[stack.size()-1]

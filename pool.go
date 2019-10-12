@@ -25,7 +25,7 @@ var (
 )
 
 var (
-	ErrFailedToInitWorkerPool = errors.New("failed to init portal worker pool")
+	errFailedToInitWorkerPool = errors.New("failed to init portal worker pool")
 )
 
 type (
@@ -85,7 +85,7 @@ func submitJobs(ctx context.Context, pf processFunc, payloads ...interface{}) (<
 		})
 		if err != nil {
 			cancel()
-			return nil, errors.WithStack(ErrFailedToInitWorkerPool)
+			return nil, errors.WithStack(errFailedToInitWorkerPool)
 		}
 	}
 
@@ -190,7 +190,7 @@ func init() {
 		processRequest,
 	)
 	if err != nil {
-		panic(ErrFailedToInitWorkerPool)
+		panic(errFailedToInitWorkerPool)
 	}
 
 	levelWorkerPoolMap.Store(0, p)
