@@ -26,14 +26,22 @@ func nestedValue(ctx context.Context, any interface{}, chainingAttrs []string) (
 		}
 	}
 
-	ret, err := invokeMethodFromReflectedValue(ctx, rv, attr)
+	meth, err := findMethod(rv, attr)
+	if err != nil {
+		// ignore method not found here.
+		// do nothing for mismatched fields.
+		logger.Warnf("[portal.nestedValue] %s", err)
+		return nil, nil
+	}
+
+	ret, err := invoke(ctx, rv, meth, attr)
 	if err != nil {
 		return nil, err
 	}
 	return nestedValue(ctx, ret, chainingAttrs[1:])
 }
 
-// invokeMethod calls the specified method of a value and return results.
+// invokeMethodOfAnyType calls the specified method of a value and return results.
 // Note:
 // - Context param is optional
 // - Method must returns at least one result.
@@ -46,21 +54,25 @@ func nestedValue(ctx context.Context, any interface{}, chainingAttrs []string) (
 // - `func (f *FooType) Bar(ctx context.Context, v interface{}) string`
 // - `func (f *FooType) Bar(ctx context.Context, v interface{}) (string, error)`
 // - `func (f *FooType) Bar(ctx context.Context, v interface{}) (string, error)`
-func invokeMethod(ctx context.Context, any interface{}, name string, args ...interface{}) (interface{}, error) {
-	return invokeMethodFromReflectedValue(ctx, reflect.ValueOf(any), name, args...)
+func invokeMethodOfAnyType(ctx context.Context, any interface{}, name string, args ...interface{}) (interface{}, error) {
+	return invokeMethodOfReflectedValue(ctx, reflect.ValueOf(any), name, args...)
 }
 
-func invokeMethodFromReflectedValue(ctx context.Context, any reflect.Value, name string, args ...interface{}) (interface{}, error) {
+func invokeMethodOfReflectedValue(ctx context.Context, any reflect.Value, name string, args ...interface{}) (interface{}, error) {
 	method, err := findMethod(any, name)
 	if err != nil {
 		return nil, err
 	}
+	return invoke(ctx, any, method, name, args...)
+}
+
+func invoke(ctx context.Context, any reflect.Value, method reflect.Value, methodName string, args ...interface{}) (interface{}, error) {
 	methodType := method.Type()
 	if shouldWithContext(methodType) {
 		args = append([]interface{}{ctx}, args...)
 	}
 
-	methodNameRepr := fmt.Sprintf("%s.%s", any.Type().String(), name)
+	methodNameRepr := fmt.Sprintf("%s.%s", any.Type().String(), methodName)
 
 	numIn := methodType.NumIn()
 	if numIn > len(args) {

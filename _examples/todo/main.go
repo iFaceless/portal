@@ -8,8 +8,8 @@ import (
 
 	"github.com/ifaceless/portal"
 
-	"github.com/ifaceless/portal/examples/todo/model"
-	"github.com/ifaceless/portal/examples/todo/schema"
+	"github.com/ifaceless/portal/_examples/todo/model"
+	"github.com/ifaceless/portal/_examples/todo/schema"
 )
 
 func main() {
@@ -26,7 +26,7 @@ func main() {
 	}
 
 	printFullFields(&task)
-	printWithOnlyFields(&task, "Description")
+	printWithOnlyFields(&task, "Unknown")
 	printWithOnlyFields(&task, "ID", "User[id,Notifications[ID],AnotherNotifications[Title]]", "simple_user[id]")
 	printMany()
 	printWithExcludeFields(&task, "Description", "ID", "User[Name,Notifications[ID,Content],AnotherNotifications], SimpleUser")
@@ -40,7 +40,8 @@ func printFullFields(task *model.TaskModel) {
 
 	err := portal.DumpWithContext(ctx, &taskSchema, task)
 	if err != nil {
-		panic(err)
+		fmt.Printf("%++v", err)
+		return
 	}
 	data, _ := json.Marshal(taskSchema)
 	fmt.Println(string(data))
@@ -78,7 +79,7 @@ func printMany() {
 		})
 	}
 
-	err := portal.Dump(&taskSchemas, &tasks, portal.Only("ID", "Title", "User[Name]", "Description"), portal.DisableConcurrency())
+	err := portal.Dump(&taskSchemas, &tasks, portal.Only("ID", "Title", "User[Name]", "Description"))
 	if err != nil {
 		panic(err)
 	}

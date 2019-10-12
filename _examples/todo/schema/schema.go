@@ -5,7 +5,7 @@ import (
 
 	"github.com/ifaceless/portal/field"
 
-	"github.com/ifaceless/portal/examples/todo/model"
+	"github.com/ifaceless/portal/_examples/todo/model"
 )
 
 type NotiSchema struct {
@@ -34,6 +34,7 @@ type TaskSchema struct {
 	Description3 string      `json:"description3,omitempty" portal:"meth:GetDescription;async"`
 	User         *UserSchema `json:"user,omitempty" portal:"nested"`
 	SimpleUser   *UserSchema `json:"simple_user,omitempty" portal:"nested;only:Name;attr:User"`
+	Unknown      string      `json:"unknown"`
 }
 
 func (ts *TaskSchema) GetDescription(model *model.TaskModel) (string, error) {
