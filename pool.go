@@ -160,8 +160,18 @@ func processRequest(request interface{}) {
 		select {
 		case <-req.ctx.Done():
 		case req.resultChan <- func() *jobResult {
+			var result jobResult
+			defer func() {
+				if p := recover(); p != nil {
+					result.Err = errors.Errorf("crashed, failed to process request: %s", p)
+				}
+			}()
+
 			data, err := req.pf(req.payload)
-			return &jobResult{Data: data, Err: err}
+			result.Data = data
+			result.Err = err
+
+			return &result
 		}():
 		}
 	default:
