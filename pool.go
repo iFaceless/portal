@@ -2,6 +2,8 @@ package portal
 
 import (
 	"context"
+	"fmt"
+	"runtime"
 	"sync"
 
 	"github.com/panjf2000/ants/v2"
@@ -160,18 +162,21 @@ func processRequest(request interface{}) {
 		select {
 		case <-req.ctx.Done():
 		case req.resultChan <- func() *jobResult {
-			var result jobResult
-			defer func() {
-				if p := recover(); p != nil {
-					result.Err = errors.Errorf("crashed, failed to process request: %s", p)
-				}
+			data, err := func() (data interface{}, err error) {
+				defer func() {
+					if p := recover(); p != nil {
+						var buf [4096]byte
+						n := runtime.Stack(buf[:], false)
+						err = errors.New(fmt.Sprintf("%s", p))
+						logger.Errorf("[portal.pool] worker crashed: %s\n%s\n", p, buf[:n])
+					}
+				}()
+
+				data, err = req.pf(req.payload)
+				return
 			}()
 
-			data, err := req.pf(req.payload)
-			result.Data = data
-			result.Err = err
-
-			return &result
+			return &jobResult{Data: data, Err: err}
 		}():
 		}
 	default:
