@@ -292,7 +292,7 @@ func (c *Chell) dumpMany(ctx context.Context, dst, src interface{}, onlyFields, 
 }
 
 func (c *Chell) dumpManySynchronously(ctx context.Context, schemaType reflect.Type, dst, src reflect.Value, onlyFields, excludeFields []string) error {
-	logger.Debugf("[portal.dumpManySynchronously] '%s' -> '%s'", src, dst)
+	logger.Debugf("[portal.dumpManySynchronously] '%s' -> '%s'", src.Type().String(), dst.Type().String())
 	for i := 0; i < src.Len(); i++ {
 		schemaPtr := reflect.New(schemaType)
 		toSchema := newSchema(schemaPtr.Interface()).withFieldAliasMapTagName(c.fieldAliasMapTagName)
@@ -318,7 +318,7 @@ func (c *Chell) dumpManySynchronously(ctx context.Context, schemaType reflect.Ty
 }
 
 func (c *Chell) dumpManyConcurrently(ctx context.Context, schemaType reflect.Type, dst, src reflect.Value, onlyFields, excludeFields []string) error {
-	logger.Debugf("[portal.dumpManyConcurrently] '%s' -> '%s'", src, dst)
+	logger.Debugf("[portal.dumpManyConcurrently] '%s' -> '%s'", src.Type().String(), dst.Type().String())
 	type Result struct {
 		index     int
 		schemaPtr reflect.Value

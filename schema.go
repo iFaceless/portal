@@ -128,7 +128,7 @@ func (s *schema) fieldValueFromSrc(ctx context.Context, field *schemaField, v in
 	if field.hasConstValue() {
 		val = field.constValue()
 	} else if field.hasMethod() {
-		ret, err := invokeStructMethod(ctx, s.rawValue, field.method(), v)
+		ret, err := invokeMethod(ctx, s.rawValue, field.method(), v)
 		if err != nil {
 			return nil, fmt.Errorf("failed to get value: %s", err)
 		}

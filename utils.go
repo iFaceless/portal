@@ -17,40 +17,41 @@ func nestedValue(ctx context.Context, any interface{}, chainingAttrs []string) (
 		return nil, errors.New("object is nil")
 	}
 
-	objValue := reflect.ValueOf(any)
-	if reflect.Indirect(objValue).Kind() != reflect.Struct {
-		return nil, errors.New("object must be a struct or a pointer to struct")
+	rv := reflect.ValueOf(any)
+	attr := chainingAttrs[0]
+	if reflect.Indirect(rv).Kind() == reflect.Struct {
+		field := reflect.Indirect(rv).FieldByName(attr)
+		if field.IsValid() {
+			return nestedValue(ctx, field.Interface(), chainingAttrs[1:])
+		}
 	}
 
-	attr := chainingAttrs[0]
-	field := reflect.Indirect(objValue).FieldByName(attr)
-	if field.IsValid() {
-		return nestedValue(ctx, field.Interface(), chainingAttrs[1:])
-	} else {
-		ret, err := invokeStructMethod(ctx, any, attr)
-		if err != nil {
-			return nil, err
-		}
-		return nestedValue(ctx, ret, chainingAttrs[1:])
+	ret, err := invokeMethodFromReflectedValue(ctx, rv, attr)
+	if err != nil {
+		return nil, err
 	}
+	return nestedValue(ctx, ret, chainingAttrs[1:])
 }
 
-// invokeStructMethod calls the specified method of given struct `any` and return results.
+// invokeMethod calls the specified method of a value and return results.
 // Note:
 // - Context param is optional
-// - Method must returns at least one value.
+// - Method must returns at least one result.
 // - Max number of return values is two, and the last one must be of `error` type.
 //
 // Supported method definitions:
-// - `func (f *Foo) Bar(v interface{}) error`
-// - `func (f *Foo) Bar(v interface{}) string`
-// - `func (f *Foo) Bar(ctx context.Context, v interface{}) error`
-// - `func (f *Foo) Bar(ctx context.Context, v interface{}) string`
-// - `func (f *Foo) Bar(ctx context.Context, v interface{}) (string, error)`
-// - `func (f *Foo) Bar(ctx context.Context, v interface{}) (string, error)`
-func invokeStructMethod(ctx context.Context, any interface{}, name string, args ...interface{}) (interface{}, error) {
-	structValue := reflect.ValueOf(any)
-	method, err := findStructMethod(structValue, name)
+// - `func (f *FooType) Bar(v interface{}) error`
+// - `func (f *FooType) Bar(v interface{}) string`
+// - `func (f *FooType) Bar(ctx context.Context, v interface{}) error`
+// - `func (f *FooType) Bar(ctx context.Context, v interface{}) string`
+// - `func (f *FooType) Bar(ctx context.Context, v interface{}) (string, error)`
+// - `func (f *FooType) Bar(ctx context.Context, v interface{}) (string, error)`
+func invokeMethod(ctx context.Context, any interface{}, name string, args ...interface{}) (interface{}, error) {
+	return invokeMethodFromReflectedValue(ctx, reflect.ValueOf(any), name, args...)
+}
+
+func invokeMethodFromReflectedValue(ctx context.Context, any reflect.Value, name string, args ...interface{}) (interface{}, error) {
+	method, err := findMethod(any, name)
 	if err != nil {
 		return nil, err
 	}
@@ -59,28 +60,30 @@ func invokeStructMethod(ctx context.Context, any interface{}, name string, args 
 		args = append([]interface{}{ctx}, args...)
 	}
 
+	methodNameRepr := fmt.Sprintf("%s.%s", any.Type().String(), name)
+
 	numIn := methodType.NumIn()
 	if numIn > len(args) {
-		return reflect.ValueOf(nil), fmt.Errorf("method '%s' must has minimum %d params: %d", name, numIn, len(args))
+		return reflect.ValueOf(nil), fmt.Errorf("method '%s' must has minimum %d params: %d", methodNameRepr, numIn, len(args))
 	}
 	if numIn != len(args) && !methodType.IsVariadic() {
-		return reflect.ValueOf(nil), fmt.Errorf("method '%s' must has %d params: %d", name, numIn, len(args))
+		return reflect.ValueOf(nil), fmt.Errorf("method '%s' must has %d params: %d", methodNameRepr, numIn, len(args))
 	}
 
 	numOut := methodType.NumOut()
 	switch numOut {
 	case 1:
 		// Cases like:
-		// func (f *Foo) Bar() error
-		// func (f *Foo) Bar() string
+		// func (f *FooType) Bar() error
+		// func (f *FooType) Bar() string
 	case 2:
 		// Cases like:
-		// func (f *Foo) Bar() (string, error)
+		// func (f *FooType) Bar() (string, error)
 		if !methodType.Out(1).Implements(reflect.TypeOf((*error)(nil)).Elem()) {
-			return reflect.ValueOf(nil), fmt.Errorf("the last return value of method '%s' must be of `error` type", name)
+			return reflect.ValueOf(nil), fmt.Errorf("the last return value of method '%s' must be of `error` type", methodNameRepr)
 		}
 	default:
-		return reflect.ValueOf(nil), fmt.Errorf("method '%s' must returns one result with an optional error", name)
+		return reflect.ValueOf(nil), fmt.Errorf("method '%s' must returns one result with an optional error", methodNameRepr)
 	}
 
 	in := make([]reflect.Value, len(args))
@@ -96,7 +99,7 @@ func invokeStructMethod(ctx context.Context, any interface{}, name string, args 
 		if argType.ConvertibleTo(inType) {
 			in[i] = argValue.Convert(inType)
 		} else {
-			return reflect.ValueOf(nil), fmt.Errorf("method '%s', param[%d] must be %s, not %s", name, i, inType, argType)
+			return reflect.ValueOf(nil), fmt.Errorf("method '%s', param[%d] must be %s, not %s", methodNameRepr, i, inType, argType)
 		}
 	}
 
@@ -111,22 +114,22 @@ func invokeStructMethod(ctx context.Context, any interface{}, name string, args 
 		}
 		return outs[0].Interface(), nil
 	default:
-		panic(fmt.Errorf("unexpected results returned by method '%s'", name))
+		return nil, errors.Errorf("unexpected results returned by method '%s'", methodNameRepr)
 	}
 }
 
-func findStructMethod(any reflect.Value, name string) (reflect.Value, error) {
-	var structPtr = any
+func findMethod(any reflect.Value, name string) (reflect.Value, error) {
+	var vptr = any
 	if any.Kind() != reflect.Ptr {
-		structPtr = reflect.New(any.Type())
-		structPtr.Elem().Set(any)
+		vptr = reflect.New(any.Type())
+		vptr.Elem().Set(any)
 	}
 
-	method := structPtr.MethodByName(name)
+	method := vptr.MethodByName(name)
 	if method.IsValid() {
 		return method, nil
 	} else {
-		return reflect.Value{}, fmt.Errorf("method '%s' not found in '%s'", name, any.Elem().Type().Name())
+		return reflect.Value{}, fmt.Errorf("method '%s' not found in '%s'", name, any.Type().String())
 	}
 }
 

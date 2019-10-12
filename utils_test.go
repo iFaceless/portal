@@ -15,6 +15,7 @@ type Country struct{ Name string }
 
 type Car struct {
 	name string
+	Kind MessageKind
 }
 
 func (c *Car) Name() string {
@@ -28,7 +29,7 @@ func (c *Car) Country() Country {
 func TestGetNestedValue_Ok(t *testing.T) {
 	ctx := context.TODO()
 
-	c := Car{"xixi"}
+	c := Car{name: "xixi", Kind: MessageKind(1)}
 	r, e := nestedValue(ctx, c, []string{"Name"})
 	assert.Nil(t, e)
 	assert.Equal(t, "xixi", r.(string))
@@ -40,6 +41,15 @@ func TestGetNestedValue_Ok(t *testing.T) {
 	r, e = nestedValue(ctx, &c, []string{"Country", "Name"})
 	assert.Nil(t, e)
 	assert.Equal(t, "China", r.(string))
+
+	mk := MessageKind(1)
+	r, e = nestedValue(ctx, &mk, []string{"Name"})
+	assert.Nil(t, e)
+	assert.Equal(t, "ok", r)
+
+	r, e = nestedValue(ctx, &c, []string{"Kind", "Alias"})
+	assert.Nil(t, e)
+	assert.Equal(t, "alias_ok", r)
 }
 
 func TestGetNestedValue_Error(t *testing.T) {
@@ -48,13 +58,12 @@ func TestGetNestedValue_Error(t *testing.T) {
 	_, e := nestedValue(ctx, nil, []string{"Name"})
 	assert.EqualError(t, e, "object is nil")
 
-	var m = 1
-	_, e = nestedValue(ctx, &m, []string{"Name"})
-	assert.EqualError(t, e, "object must be a struct or a pointer to struct")
-
-	var c = Car{"foo"}
+	var c = Car{name: "foo", Kind: MessageKind(1)}
 	_, e = nestedValue(ctx, &c, []string{"What"})
-	assert.EqualError(t, e, "method 'What' not found in 'Car'")
+	assert.EqualError(t, e, "method 'What' not found in '*portal.Car'")
+
+	_, e = nestedValue(ctx, &c, []string{"Kind", "NotFound"})
+	assert.EqualError(t, e, "method 'NotFound' not found in 'portal.MessageKind'")
 }
 
 type Foo struct{}
@@ -130,69 +139,132 @@ func (b *Book) LastReturnValueNotErrorType() (string, string) {
 }
 
 //nolint
-func TestInvokeMethod(t *testing.T) {
+func TestInvokeStructMethod(t *testing.T) {
 	book := Book{name: "Test"}
 	ctx := context.TODO()
 	ctx = context.WithValue(ctx, "key", "hello, world")
 
-	ret, err := invokeStructMethod(ctx, book, "ShortName")
+	ret, err := invokeMethod(ctx, book, "ShortName")
 	assert.Nil(t, err)
 	assert.Equal(t, "Test", ret)
 
-	ret, err = invokeStructMethod(ctx, book, "FullName")
+	ret, err = invokeMethod(ctx, book, "FullName")
 	assert.Nil(t, err)
 	assert.Equal(t, "Prefix Test", ret)
 
-	ret, err = invokeStructMethod(ctx, &book, "ShortName")
+	ret, err = invokeMethod(ctx, &book, "ShortName")
 	assert.Nil(t, err)
 	assert.Equal(t, "Test", ret)
 
-	ret, err = invokeStructMethod(ctx, &book, "FullName")
+	ret, err = invokeMethod(ctx, &book, "FullName")
 	assert.Nil(t, err)
 	assert.Equal(t, "Prefix Test", ret)
 
-	ret, err = invokeStructMethod(ctx, book, "AddBook", "Book 2")
+	ret, err = invokeMethod(ctx, book, "AddBook", "Book 2")
 	assert.Nil(t, err)
 	assert.Equal(t, "Add 'Book 2' ok", ret)
 
-	ret, err = invokeStructMethod(ctx, book, "GetContextKey")
+	ret, err = invokeMethod(ctx, book, "GetContextKey")
 	assert.Nil(t, err)
 	assert.Equal(t, "hello, world", ret)
 
-	ret, err = invokeStructMethod(ctx, book, "Plus", 100)
+	ret, err = invokeMethod(ctx, book, "Plus", 100)
 	assert.Nil(t, err)
 	assert.Equal(t, 200, ret)
 
-	ret, err = invokeStructMethod(ctx, book, "NoError")
+	ret, err = invokeMethod(ctx, book, "NoError")
 	assert.Nil(t, err)
 	assert.Equal(t, "no error", ret)
 
-	ret, err = invokeStructMethod(ctx, &book, "MethodNotFound")
-	assert.Errorf(t, err, "method 'MethodNotFound' not found in 'Book'")
+	ret, err = invokeMethod(ctx, &book, "MethodNotFound")
+	assert.Errorf(t, err, "method '*portal.Book.MethodNotFound' not found in 'Book'")
 
-	_, err = invokeStructMethod(ctx, &book, "Plus")
+	_, err = invokeMethod(ctx, &book, "Plus")
 	assert.NotNil(t, err)
-	assert.Equal(t, "method 'Plus' must has minimum 2 params: 1", err.Error())
+	assert.Equal(t, "method '*portal.Book.Plus' must has minimum 2 params: 1", err.Error())
 
-	_, err = invokeStructMethod(ctx, &book, "Plus", 1, 2)
+	_, err = invokeMethod(ctx, &book, "Plus", 1, 2)
 	assert.NotNil(t, err)
-	assert.Equal(t, "method 'Plus' must has 2 params: 3", err.Error())
+	assert.Equal(t, "method '*portal.Book.Plus' must has 2 params: 3", err.Error())
 
-	_, err = invokeStructMethod(ctx, &book, "NotReturn")
+	_, err = invokeMethod(ctx, &book, "NotReturn")
 	assert.NotNil(t, err)
-	assert.Equal(t, "method 'NotReturn' must returns one result with an optional error", err.Error())
+	assert.Equal(t, "method '*portal.Book.NotReturn' must returns one result with an optional error", err.Error())
 
-	_, err = invokeStructMethod(ctx, &book, "ReturnTooMany")
+	_, err = invokeMethod(ctx, &book, "ReturnTooMany")
 	assert.NotNil(t, err)
-	assert.Equal(t, "method 'ReturnTooMany' must returns one result with an optional error", err.Error())
+	assert.Equal(t, "method '*portal.Book.ReturnTooMany' must returns one result with an optional error", err.Error())
 
-	_, err = invokeStructMethod(ctx, &book, "ReturnError")
+	_, err = invokeMethod(ctx, &book, "ReturnError")
 	assert.NotNil(t, err)
 	assert.Equal(t, "error", err.Error())
 
-	_, err = invokeStructMethod(ctx, &book, "LastReturnValueNotErrorType")
+	_, err = invokeMethod(ctx, &book, "LastReturnValueNotErrorType")
 	assert.NotNil(t, err)
-	assert.Equal(t, "the last return value of method 'LastReturnValueNotErrorType' must be of `error` type", err.Error())
+	assert.Equal(t, "the last return value of method '*portal.Book.LastReturnValueNotErrorType' must be of `error` type", err.Error())
+}
+
+type MessageKind int
+
+func (mk *MessageKind) Name() string {
+	switch *mk {
+	case 1:
+		return "ok"
+	case 2:
+		return "failed"
+	default:
+		return "undefined"
+	}
+}
+
+func (mk MessageKind) Alias() string {
+	switch mk {
+	case 1:
+		return "alias_ok"
+	case 2:
+		return "alias_failed"
+	default:
+		return "alias_undefined"
+	}
+}
+
+func (mk MessageKind) ValueWithArgs(a string) string {
+	switch mk {
+	case 1:
+		return "ok" + a
+	case 2:
+		return "failed" + a
+	default:
+		return "undefined" + a
+	}
+}
+
+func TestInvokeMethodOfNonStruct(t *testing.T) {
+	ctx := context.Background()
+	mk := MessageKind(1)
+	ret1, err1 := invokeMethod(ctx, mk, "Name")
+	assert.Nil(t, err1)
+	assert.Equal(t, "ok", ret1.(string))
+
+	ret2, err2 := invokeMethod(ctx, &mk, "Name")
+	assert.Nil(t, err2)
+	assert.Equal(t, "ok", ret2.(string))
+
+	ret3, err3 := invokeMethod(ctx, mk, "Alias")
+	assert.Nil(t, err3)
+	assert.Equal(t, "alias_ok", ret3.(string))
+
+	ret4, err4 := invokeMethod(ctx, &mk, "Alias")
+	assert.Nil(t, err4)
+	assert.Equal(t, "alias_ok", ret4.(string))
+
+	ret5, err5 := invokeMethod(ctx, &mk, "ValueWithArgs", "_hello")
+	assert.Nil(t, err5)
+	assert.Equal(t, "ok_hello", ret5.(string))
+
+	_, err6 := invokeMethod(ctx, &mk, "NotFound", "_hello")
+	assert.NotNil(t, err6)
+	assert.Equal(t, "method 'NotFound' not found in '*portal.MessageKind'", err6.Error())
 }
 
 //1000000	      1371 ns/op
@@ -201,7 +273,7 @@ func BenchmarkInvokeMethod(b *testing.B) {
 
 	book := Book{name: "Test"}
 	for i := 0; i < b.N; i++ {
-		_, _ = invokeStructMethod(context.TODO(), book, "FullName")
+		_, _ = invokeMethod(context.TODO(), book, "FullName")
 	}
 }
 
