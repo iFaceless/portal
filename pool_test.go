@@ -44,7 +44,6 @@ func Test_submitJobsCrashed(t *testing.T) {
 
 	resultChan, err := submitJobs(ctx, func(payload interface{}) (i interface{}, e error) {
 		panic("job crashed")
-		return
 	}, 1)
 	assert.Nil(t, err)
 

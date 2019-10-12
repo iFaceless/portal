@@ -183,7 +183,7 @@ func structName(v interface{}) string {
 }
 
 func isNil(in interface{}) bool {
-	if in == nil || in == interface{}(nil) {
+	if in == nil {
 		return true
 	}
 
