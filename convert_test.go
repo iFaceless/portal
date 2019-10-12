@@ -4,6 +4,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/assert"
+
 	"github.com/stretchr/testify/suite"
 )
 
@@ -776,9 +778,20 @@ func (s *SuiteConvertTester) Test_ConvertWithReflect() {
 	s.Nil(err)
 	s.Equal(user, out.(User))
 
-	var targetPtr *User
-	_, err = convert(targetPtr, user)
-	s.NotNil(err)
+	// User -> *User
+	out, err = convert(&target, user)
+	s.Nil(err)
+	s.Equal(user, *out.(*User))
+
+	// *User -> *User
+	out, err = convert(&target, &user)
+	s.Nil(err)
+	s.Equal(user, *out.(*User))
+
+	// *User -> User
+	out, err = convert(target, &user)
+	s.Nil(err)
+	s.Equal(user, out.(User))
 
 	var targetInt int
 	_, err = convert(targetInt, "1.23abc")
@@ -787,4 +800,38 @@ func (s *SuiteConvertTester) Test_ConvertWithReflect() {
 
 func TestSuiteConvert(t *testing.T) {
 	suite.Run(t, new(SuiteConvertTester))
+}
+
+func Test_convertWithReflect(t *testing.T) {
+	var dst int
+	src := 10
+
+	// type -> type
+	ret, err := convertWithReflect(dst, src)
+	assert.Nil(t, err)
+	assert.Equal(t, 10, ret)
+
+	// *type -> *type
+	ret, err = convertWithReflect(&dst, &src)
+	assert.Nil(t, err)
+	assert.Equal(t, 10, *ret.(*int))
+
+	// *type -> type
+	ret, err = convertWithReflect(dst, &src)
+	assert.Nil(t, err)
+	assert.Equal(t, 10, ret.(int))
+
+	// type -> *type
+	ret, err = convertWithReflect(&dst, src)
+	assert.Nil(t, err)
+	assert.Equal(t, 10, *ret.(*int))
+
+	var dst1 int64
+	ret, err = convertWithReflect(dst1, src)
+	assert.Nil(t, err)
+	assert.Equal(t, int64(10), ret.(int64))
+
+	ret, err = convertWithReflect(&dst1, src)
+	assert.Nil(t, err)
+	assert.Equal(t, int64(10), *ret.(*int64))
 }

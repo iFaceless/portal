@@ -171,9 +171,10 @@ func structName(v interface{}) string {
 }
 
 func isNil(in interface{}) bool {
-	if in == nil {
+	if in == nil || in == interface{}(nil) {
 		return true
 	}
+
 	v := reflect.ValueOf(in)
 	switch v.Kind() {
 	case reflect.Ptr, reflect.Interface, reflect.Map, reflect.Slice:

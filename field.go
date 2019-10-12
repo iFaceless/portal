@@ -6,6 +6,8 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/pkg/errors"
+
 	"reflect"
 
 	"github.com/fatih/structs"
@@ -51,34 +53,46 @@ func (f *schemaField) String() string {
 	return f.schema.name() + "." + f.Name()
 }
 
+// cases:
+// value -> value
+// value -> *value
+// *value -> *value
+// *value -> value
+// Valuer -> value
+// Valuer -> *value
+// Valuer -> SetValuer
+// value -> SetValuer
 func (f *schemaField) setValue(v interface{}) error {
-	realValue, err := f.realInputValue(v)
-	if err != nil {
-		return err
-	}
-
-	convertedValue, err := convert(f.Value(), realValue)
-	if err != nil {
-		return f.setIndirectly(realValue)
-	} else {
+	convertedValue, err := convert(f.Value(), v)
+	if err == nil {
 		return f.Set(convertedValue)
 	}
+
+	indirectValue, err := f.inputValueIndirectly(v)
+	if err != nil {
+		return errors.WithStack(err)
+	}
+
+	convertedValue, err = convert(f.Value(), indirectValue)
+	if err == nil {
+		return f.Set(convertedValue)
+	}
+
+	return f.setIndirectly(indirectValue)
 }
 
-func (f *schemaField) realInputValue(v interface{}) (interface{}, error) {
+func (f *schemaField) inputValueIndirectly(v interface{}) (interface{}, error) {
 	var iv interface{}
 	rv := reflect.ValueOf(v)
 	switch rv.Kind() {
 	case reflect.Ptr:
 		iv = v
-	case reflect.Struct:
-		// input is `SomeStruct`
-		// but `*SomeStruct` implements `Valuer` interface.
+	default:
+		// input is `SomeType`
+		// but `*SomeType` implements `Valuer` interface.
 		tmpValue := reflect.New(rv.Type())
 		tmpValue.Elem().Set(rv)
 		iv = tmpValue.Interface()
-	default:
-		return v, nil
 	}
 
 	switch r := iv.(type) {

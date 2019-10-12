@@ -139,10 +139,25 @@ func convert(to, from interface{}) (out interface{}, err error) {
 func convertWithReflect(to interface{}, from interface{}) (interface{}, error) {
 	expectedType := reflect.TypeOf(to)
 	value := reflect.ValueOf(from)
+
+	// type -> type
 	if value.Type().ConvertibleTo(expectedType) {
 		return value.Convert(expectedType).Interface(), nil
 	}
-	return nil, fmt.Errorf("failed to convert from type '%s' to '%s'", value.Type().Name(), expectedType.Name())
+
+	// type -> *type
+	if expectedType.Kind() == reflect.Ptr && value.Type().ConvertibleTo(expectedType.Elem()) {
+		expectedValue := reflect.New(expectedType.Elem())
+		expectedValue.Elem().Set(value.Convert(expectedType.Elem()))
+		return expectedValue.Interface(), nil
+	}
+
+	// *type -> type
+	if value.Type().Kind() == reflect.Ptr && value.Type().Elem().ConvertibleTo(expectedType) {
+		return value.Elem().Convert(expectedType).Interface(), nil
+	}
+
+	return nil, fmt.Errorf("failed to convert from type '%s' to '%s'", value.Type().String(), expectedType.String())
 }
 
 func toIntPtrE(v interface{}) (*int, error) {

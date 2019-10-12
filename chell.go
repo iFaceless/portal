@@ -202,9 +202,6 @@ func (c *Chell) dumpField(ctx context.Context, field *schemaField, value interfa
 		return nil
 	}
 
-	if convertible(value, field.Field.Value()) {
-		return field.setValue(value)
-	}
 	if !field.isNested() {
 		logger.Debugf("[portal.chell] dump normal field %s with value %v", field, value)
 		return field.setValue(value)

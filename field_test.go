@@ -5,6 +5,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/pkg/errors"
+
 	"github.com/stretchr/testify/assert"
 )
 
@@ -213,6 +215,12 @@ func (t *Timestamp) Value() (interface{}, error) {
 	return t.tm, nil
 }
 
+type ErrorValue int
+
+func (v ErrorValue) Value() (interface{}, error) {
+	return 0, errors.New("error value")
+}
+
 func TestField_SetValue(t *testing.T) {
 	type BarSchema struct {
 		ID   string
@@ -244,7 +252,7 @@ func TestField_SetValue(t *testing.T) {
 	assert.Equal(t, Timestamp{now}, *f.Value().(*Timestamp))
 
 	f = newField(schema, schema.innerStruct().Field("Ts2"))
-	assert.Nil(t, f.setValue(Timestamp{now}))
+	assert.Nil(t, f.setValue(&Timestamp{now}))
 	assert.Equal(t, Timestamp{now}, f.Value().(Timestamp))
 
 	f = newField(schema, schema.innerStruct().Field("Ts2"))
@@ -254,6 +262,12 @@ func TestField_SetValue(t *testing.T) {
 	f = newField(schema, schema.innerStruct().Field("Ts2"))
 	assert.Nil(t, f.setValue(now))
 	assert.Equal(t, Timestamp{now}, f.Value().(Timestamp))
+
+	f = newField(schema, schema.innerStruct().Field("Ts2"))
+	assert.NotNil(t, f.setValue(100))
+
+	f = newField(schema, schema.innerStruct().Field("Ts2"))
+	assert.NotNil(t, f.setValue(ErrorValue(0)))
 }
 
 // BenchmarkNewField-4   	 3622506	       317 ns/op
