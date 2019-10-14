@@ -31,12 +31,16 @@ func newSchema(v interface{}) *schema {
 	case reflect.Ptr:
 		// var schema *SchemaStruct
 		// ptr := &schema
-		typ, err := innerStructType(rv.Type())
-		if err != nil {
-			panic(fmt.Errorf("cannot get schema struct: %s", err))
+		if rv.Elem().IsNil() {
+			typ, err := innerStructType(rv.Type())
+			if err != nil {
+				panic(fmt.Errorf("cannot get schema struct: %s", err))
+			}
+			schemaValue = reflect.New(typ).Elem()
+			rv.Elem().Set(schemaValue.Addr())
+		} else {
+			schemaValue = rv.Elem().Elem()
 		}
-		schemaValue = reflect.New(typ).Elem()
-		rv.Elem().Set(schemaValue.Addr())
 	default:
 		panic("expect a pointer to struct")
 	}

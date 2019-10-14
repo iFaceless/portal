@@ -118,8 +118,24 @@ func TestDumpOneFilterOnlyFields(t *testing.T) {
 	err = Dump(&taskSchema3, &task, Only("title", "simple_user"), FieldAliasMapTagName("json"))
 	assert.Nil(t, err)
 
-	data, _ = json.Marshal(taskSchema)
+	data, _ = json.Marshal(taskSchema3)
 	assert.Equal(t, `{"title":"Finish your jobs.","simple_user":{"name":"user:1"},"unknown":""}`, string(data))
+
+	// nil pointer
+	var taskSchema4 *TaskSchema
+	err = Dump(&taskSchema4, &task, Only("title", "simple_user"), FieldAliasMapTagName("json"))
+	assert.Nil(t, err)
+
+	data, _ = json.Marshal(taskSchema4)
+	assert.Equal(t, `{"title":"Finish your jobs.","simple_user":{"name":"user:1"},"unknown":""}`, string(data))
+
+	// non-nil pointer to schema
+	var taskSchema5 = &TaskSchema{Unknown: "unknown"}
+	err = Dump(&taskSchema5, &task, Only("title", "simple_user"), FieldAliasMapTagName("json"))
+	assert.Nil(t, err)
+
+	data, _ = json.Marshal(taskSchema5)
+	assert.Equal(t, `{"title":"Finish your jobs.","simple_user":{"name":"user:1"},"unknown":"unknown"}`, string(data))
 }
 
 func TestDumpOneExcludeFields(t *testing.T) {
