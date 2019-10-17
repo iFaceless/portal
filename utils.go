@@ -111,7 +111,7 @@ func invoke(ctx context.Context, any reflect.Value, method reflect.Value, method
 		if argType.ConvertibleTo(inType) {
 			in[i] = argValue.Convert(inType)
 		} else {
-			return reflect.ValueOf(nil), fmt.Errorf("method '%s', param[%d] must be %s, not %s", methodNameRepr, i, inType, argType)
+			return reflect.ValueOf(nil), fmt.Errorf("param[%d] of method '%s' must be %s, not %s", i, methodNameRepr, argType, inType)
 		}
 	}
 
