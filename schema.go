@@ -128,7 +128,6 @@ func (s *schema) fieldValueFromSrc(ctx context.Context, field *schemaField, v in
 		return nil, fmt.Errorf("failed to get value for field %s, empty input data %v", field, v)
 	}
 
-	src := structs.New(v)
 	if field.hasConstValue() {
 		val = field.constValue()
 	} else if field.hasMethod() {
@@ -140,18 +139,7 @@ func (s *schema) fieldValueFromSrc(ctx context.Context, field *schemaField, v in
 	} else if field.hasChainingAttrs() {
 		return nestedValue(ctx, v, field.chainingAttrs())
 	} else {
-		if field.isNested() {
-			return nestedValue(ctx, v, []string{field.Name()})
-		} else {
-			f, ok := src.FieldOk(field.Name())
-			if ok {
-				val = f.Value()
-			} else {
-				v, e := nestedValue(ctx, v, []string{field.Name()})
-				val = v
-				err = e
-			}
-		}
+		return nestedValue(ctx, v, []string{field.Name()})
 	}
 
 	return
