@@ -19,15 +19,16 @@ func nestedValue(ctx context.Context, any interface{}, chainingAttrs []string) (
 
 	rv := reflect.ValueOf(any)
 	attr := chainingAttrs[0]
-	if reflect.Indirect(rv).Kind() == reflect.Struct {
-		field := reflect.Indirect(rv).FieldByName(attr)
-		if field.IsValid() {
-			return nestedValue(ctx, field.Interface(), chainingAttrs[1:])
-		}
-	}
 
 	meth, err := findMethod(rv, attr)
 	if err != nil {
+		if reflect.Indirect(rv).Kind() == reflect.Struct {
+			field := reflect.Indirect(rv).FieldByName(attr)
+			if field.IsValid() {
+				return nestedValue(ctx, field.Interface(), chainingAttrs[1:])
+			}
+		}
+
 		// ignore method not found here.
 		// do nothing for mismatched fields.
 		logger.Warnf("[portal.nestedValue] %s", err)

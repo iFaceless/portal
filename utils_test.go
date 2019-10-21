@@ -26,6 +26,18 @@ func (c *Car) Country() Country {
 	return Country{"China"}
 }
 
+type BigCar struct {
+	Car
+}
+
+func (bc *BigCar) Name() string {
+	return "big car"
+}
+
+func (bc *BigCar) Kind() MessageKind {
+	return MessageKind(2)
+}
+
 func TestGetNestedValue_Ok(t *testing.T) {
 	ctx := context.TODO()
 
@@ -50,6 +62,15 @@ func TestGetNestedValue_Ok(t *testing.T) {
 	r, e = nestedValue(ctx, &c, []string{"Kind", "Alias"})
 	assert.Nil(t, e)
 	assert.Equal(t, "alias_ok", r)
+
+	bigCar := &BigCar{Car: c}
+	r, e = nestedValue(ctx, bigCar, []string{"Name"})
+	assert.Nil(t, e)
+	assert.Equal(t, "big car", r)
+
+	r, e = nestedValue(ctx, bigCar, []string{"Kind", "Alias"})
+	assert.Nil(t, e)
+	assert.Equal(t, "alias_failed", r)
 }
 
 func TestGetNestedValue_Error(t *testing.T) {
