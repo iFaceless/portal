@@ -61,3 +61,13 @@ func DisableConcurrency() option {
 		return nil
 	}
 }
+
+// CustomFieldTagMap sets custom tag for each field.
+// It will override the default tag settings defined in your struct.
+// The key should be: `<StructName>.<FieldName>`
+func CustomFieldTagMap(in map[string]string) option {
+	return func(c *Chell) error {
+		c.customFieldTagMap = in
+		return nil
+	}
+}

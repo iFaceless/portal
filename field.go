@@ -29,22 +29,10 @@ type schemaField struct {
 
 func newField(schema *schema, field *structs.Field) *schemaField {
 	tagStr := field.Tag(defaultTagName)
-
-	var settings map[string]string
-	cachedSettings, ok := cachedFieldTagSettings.Load(tagStr)
-	if ok {
-		result, _ := cachedSettings.(map[string]string)
-		settings = result
-	} else {
-		result := parseTagSettings(tagStr)
-		cachedFieldTagSettings.Store(tagStr, result)
-		settings = result
-	}
-
 	return &schemaField{
 		Field:    field,
 		schema:   schema,
-		settings: settings,
+		settings: parseTagSettings(tagStr),
 		alias:    parseAlias(field.Tag(schema.fieldAliasMapTagName)),
 	}
 }
@@ -234,6 +222,12 @@ func (f *schemaField) async() bool {
 }
 
 func parseTagSettings(s string) map[string]string {
+	cachedSettings, ok := cachedFieldTagSettings.Load(s)
+	if ok {
+		result, _ := cachedSettings.(map[string]string)
+		return result
+	}
+
 	settings := make(map[string]string)
 	for _, item := range strings.Split(s, ";") {
 		parts := strings.Split(item, ":")
@@ -243,6 +237,8 @@ func parseTagSettings(s string) map[string]string {
 			settings[strings.ToUpper(strings.TrimSpace(parts[0]))] = ""
 		}
 	}
+
+	cachedFieldTagSettings.Store(s, settings)
 	return settings
 }
 

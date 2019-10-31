@@ -38,7 +38,10 @@ func printFullFields(task *model.TaskModel) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Millisecond)
 	defer cancel()
 
-	err := portal.DumpWithContext(ctx, &taskSchema, task)
+	err := portal.DumpWithContext(ctx, &taskSchema, task, portal.CustomFieldTagMap(map[string]string{
+		"TaskSchema.Title": "const:hello",
+		"UserSchema.Name":  "const:xiaoming",
+	}))
 	if err != nil {
 		fmt.Printf("%++v", err)
 		return

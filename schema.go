@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"reflect"
+	"strings"
 
 	"github.com/fatih/structs"
 )
@@ -14,9 +15,11 @@ type schema struct {
 	schemaStruct         *structs.Struct
 	availableFieldNames  map[string]bool
 	fields               []*schemaField
+
+	parent *schema
 }
 
-func newSchema(v interface{}) *schema {
+func newSchema(v interface{}, parent ...*schema) *schema {
 	rv := reflect.ValueOf(v)
 	if rv.Kind() != reflect.Ptr {
 		panic("expect a pointer to struct")
@@ -50,6 +53,10 @@ func newSchema(v interface{}) *schema {
 		availableFieldNames:  make(map[string]bool),
 		rawValue:             schemaValue.Addr().Interface(),
 		fieldAliasMapTagName: "json",
+	}
+
+	if len(parent) > 0 {
+		sch.parent = parent[0]
 	}
 
 	for _, name := range getAvailableFieldNames(sch.schemaStruct.Fields()) {
@@ -181,6 +188,26 @@ func (s *schema) setExcludeFields(fieldNames ...string) {
 
 func (s *schema) name() string {
 	return structName(s.rawValue)
+}
+
+func (s *schema) nameWithParents() string {
+	var names []string
+
+	p := s
+	for p != nil {
+		names = append(names, p.name())
+		p = p.parent
+	}
+
+	// reverse names (two cursors)
+	i, j := 0, len(names)-1
+	for i < j {
+		names[i], names[j] = names[j], names[i]
+		i++
+		j--
+	}
+
+	return strings.Join(names, ".")
 }
 
 func (s *schema) fieldByNameOrAlias(name string) *schemaField {

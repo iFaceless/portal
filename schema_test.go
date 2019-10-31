@@ -97,3 +97,12 @@ func filedNames(fields []*schemaField) (names []string) {
 	}
 	return
 }
+
+func TestSchema_NameWithParent(t *testing.T) {
+	s1 := newSchema(&SchoolSchema{})
+	s2 := newSchema(&PersonSchema{}, s1)
+	s3 := newSchema(&UserSchema2{}, s2)
+	assert.Equal(t, s1.nameWithParents(), "SchoolSchema")
+	assert.Equal(t, s2.nameWithParents(), "SchoolSchema.PersonSchema")
+	assert.Equal(t, s3.nameWithParents(), "SchoolSchema.PersonSchema.UserSchema2")
+}
