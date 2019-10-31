@@ -2,6 +2,7 @@ package portal
 
 import (
 	"context"
+	"fmt"
 	"reflect"
 
 	"github.com/pkg/errors"
@@ -14,6 +15,9 @@ type Chell struct {
 	disableConcurrency   bool
 	onlyFieldFilters     map[int][]*filterNode
 	excludeFieldFilters  map[int][]*filterNode
+
+	// custom field tags
+	customFieldTagMap map[string]string
 }
 
 // New creates a new Chell instance with a worker pool waiting to be feed.
@@ -113,6 +117,14 @@ func (c *Chell) SetExcludeFields(fields ...string) error {
 }
 
 func (c *Chell) dump(ctx context.Context, dst *schema, src interface{}) error {
+	// read custom field tags
+	for _, field := range dst.fields {
+		key := fmt.Sprintf("%s.%s", field.schema.name(), field.Name())
+		if v, ok := c.customFieldTagMap[key]; ok {
+			field.settings = parseTagSettings(v)
+		}
+	}
+
 	err := c.dumpSyncFields(ctx, dst, src)
 	if err != nil {
 		return errors.WithStack(err)
