@@ -13,8 +13,6 @@ It's a lightweight package which simplifies Go object serialization. Inspired by
 
 *Note that unlike [marshmallow](https://github.com/marshmallow-code/marshmallow), [portal](https://github.com/iFaceless/portal/) only focuses on object serialization. So, if you want to validate struct fields, please refer to  [go-playground/validator](https://github.com/go-playground/validator) or [asaskevich/govalidator](https://github.com/asaskevich/govalidator).*
 
-**Not production ready yet, use with caution please.**
-
 # Features
 
 1. Can be configured to fill data into multiple fields concurrently.
