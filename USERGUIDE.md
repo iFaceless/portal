@@ -83,6 +83,20 @@ type UserSchema struct {
 
 ```
 
+### Set Default Value for Field: `default`
+
+Only works for types: pointer/slice/map. For basic types (integer, string, bool), default value will be converted and set to field directly. For complex types (eg. map/slice/pointer to custom struct), set default to `AUTO_INIT`, portal will initialize field to its zero value. 
+
+```go
+type ContentSchema struct {
+	BizID   *string        `json:"biz_id" portal:"default:100"`
+	SkuID   *string        `json:"sku_id"`                             // -> json null
+	Users   []*UserSchema  `json:"users" portal:"default:AUTO_INIT"`   // -> json []
+	Members map[string]int `json:"members" portal:"default:AUTO_INIT"` // -> json {}
+	User    *UserSchema    `json:"user" portal:"default:AUTO_INIT"`
+}
+```
+
 ## Embedding Schema
 ```go
 type PersonSchema struct {

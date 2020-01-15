@@ -73,7 +73,9 @@ func (c *Chell) DumpWithContext(ctx context.Context, dst, src interface{}) error
 		return c.dumpMany(
 			ctx, dst, src,
 			extractFilterNodeNames(c.onlyFieldFilters[0], nil),
-			extractFilterNodeNames(c.excludeFieldFilters[0], &extractOption{ignoreNodeWithChildren: true}))
+			extractFilterNodeNames(c.excludeFieldFilters[0], &extractOption{ignoreNodeWithChildren: true}),
+			"",
+		)
 	} else {
 		toSchema := newSchema(dst).withFieldAliasMapTagName(c.fieldAliasMapTagName)
 		toSchema.setOnlyFields(extractFilterNodeNames(c.onlyFieldFilters[0], nil)...)
@@ -210,8 +212,13 @@ func (c *Chell) dumpAsyncFields(ctx context.Context, dst *schema, src interface{
 
 func (c *Chell) dumpField(ctx context.Context, field *schemaField, value interface{}) error {
 	if isNil(value) {
-		logger.Warnf("[portal.chell] cannot get value for field %s, current input value is %v", field, value)
-		return nil
+		if field.hasDefaultValue() {
+			value = field.defaultValue()
+			logger.Infof("[portal.chell] use default value for field `%s`", field)
+		} else {
+			logger.Warnf("[portal.chell] cannot get value for field `%s`, current input value is %v", field, value)
+			return nil
+		}
 	}
 
 	if !field.isNested() {
@@ -259,6 +266,7 @@ func (c *Chell) dumpFieldNestedMany(ctx context.Context, field *schemaField, src
 		src,
 		field.nestedOnlyNames(c.onlyFieldFilters[depth]),
 		field.nestedExcludeNames(c.excludeFieldFilters[depth]),
+		field.String(),
 	)
 	if err != nil {
 		return err
@@ -279,14 +287,18 @@ func (c *Chell) dumpFieldNestedMany(ctx context.Context, field *schemaField, src
 	return nil
 }
 
-func (c *Chell) dumpMany(ctx context.Context, dst, src interface{}, onlyFields, excludeFields []string) error {
+func (c *Chell) dumpMany(ctx context.Context, dst, src interface{}, onlyFields, excludeFields []string, field string) error {
 	rv := reflect.ValueOf(src)
 	if rv.Kind() == reflect.Ptr {
 		rv = reflect.Indirect(rv)
 	}
 
 	if rv.Kind() != reflect.Slice {
-		panic("input src must be a slice")
+		if field != "" {
+			panic(fmt.Sprintf("input src must be a slice, current processing field is `%s`", field))
+		} else {
+			panic(fmt.Sprintf("input src must be a slice"))
+		}
 	}
 
 	schemaSlice := reflect.Indirect(reflect.ValueOf(dst))
