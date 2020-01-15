@@ -143,6 +143,36 @@ func TestField_ConstValue(t *testing.T) {
 	assert.False(t, f.hasConstValue())
 }
 
+func TestField_DefaultValue(t *testing.T) {
+	type UserSchema struct {
+		ID string
+	}
+
+	type FooSchema struct {
+		ID       *string           `json:"id" portal:"default:100"`
+		Settings map[string]string `json:"settings" portal:"default:AUTO_INIT"`
+		User     *UserSchema       `json:"user" portal:"default:AUTO_INIT"`
+		Users    []*UserSchema     `json:"users" portal:"default:AUTO_INIT"`
+	}
+
+	schema := newSchema(&FooSchema{})
+	f := newField(schema, schema.innerStruct().Field("ID"))
+	assert.Equal(t, "100", f.defaultValue())
+	assert.True(t, f.hasDefaultValue())
+
+	f = newField(schema, schema.innerStruct().Field("Settings"))
+	assert.Equal(t, map[string]string{}, f.defaultValue())
+	assert.True(t, f.hasDefaultValue())
+
+	f = newField(schema, schema.innerStruct().Field("User"))
+	assert.Equal(t, &UserSchema{}, f.defaultValue())
+	assert.True(t, f.hasDefaultValue())
+
+	f = newField(schema, schema.innerStruct().Field("Users"))
+	assert.Equal(t, make([]*UserSchema, 0), f.defaultValue())
+	assert.True(t, f.hasDefaultValue())
+}
+
 func TestField_Async(t *testing.T) {
 	type FooSchema struct {
 		ID   int

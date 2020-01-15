@@ -170,6 +170,36 @@ func (f *schemaField) hasConstValue() bool {
 	return f.tagHasOption("CONST")
 }
 
+func (f *schemaField) defaultValue() interface{} {
+	val, ok := f.settings["DEFAULT"]
+	if !ok {
+		return nil
+	}
+
+	var defaultValue interface{}
+	if val == "AUTO_INIT" {
+		// just initialize this field, now support ptr/slice/map
+		typ := reflect.TypeOf(f.Value())
+		switch typ.Kind() {
+		case reflect.Ptr:
+			defaultValue = reflect.New(typ.Elem()).Interface()
+		case reflect.Slice:
+			defaultValue = reflect.MakeSlice(typ, 0, 0).Interface()
+		case reflect.Map:
+			defaultValue = reflect.MakeMap(typ).Interface()
+		default:
+			defaultValue = reflect.New(typ).Elem().Interface()
+		}
+		return defaultValue
+	}
+
+	return val
+}
+
+func (f *schemaField) hasDefaultValue() bool {
+	return f.tagHasOption("DEFAULT")
+}
+
 func (f *schemaField) tagHasOption(opt string) bool {
 	if _, ok := f.settings[opt]; ok {
 		return true
