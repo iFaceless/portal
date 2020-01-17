@@ -15,6 +15,17 @@ func (u *UserModel) Fullname() string {
 	return fmt.Sprintf("user:%d", u.ID)
 }
 
+// Fullname2 'attribute' method can accept an ctx param.
+func (u *UserModel) Fullname2(ctx context.Context) string {
+	return fmt.Sprintf("user:%d", u.ID)
+}
+
+// Fullname3 'attribute' can return error too, portal will ignore the 
+// result if error returned.
+func (u *UserModel) Fullname3(ctx context.Context) (string, error) {
+	return fmt.Sprintf("user:%d", u.ID)
+}
+
 // Schema definition
 type UserSchema struct {
 	ID                   string        `json:"id,omitempty"`
