@@ -35,9 +35,10 @@ func (ts *TaskSchema) GetTitle(ctx context.Context, model *model.TaskModel) stri
 	return "Task Title"
 }
 
-func (ts *TaskSchema) GetDescription(model *model.TaskModel) string {
+func (ts *TaskSchema) GetDescription(model *model.TaskModel) (string, error) {
 	// Here we ignore the first context param.
-	return "Custom description"
+	// If method returns an error, portal will ignore the result.
+	return "Custom description", nil
 }
 ```
 
