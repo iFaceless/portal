@@ -3,6 +3,33 @@ PORTAL USER GUIDE
 
 Let [portal](https://github.com/iFaceless/portal) worry about trivial details, say goodbye to boilerplate code (our final goal)!
 
+## Options
+### Specify fields to keep: `Only()`
+
+```go
+// keep field A only
+c := New(Only("A")) 
+
+// keep field B and C of the nested struct A
+c := New("A[B,C]")
+```
+
+### Specify fields to exclude: `Exclude()`
+
+```go
+// exclude field A
+c := New(Exclude("A")) 
+
+// exclude field B and C of the nested struct A, but other fields of struct A are still selected.
+c := New(Exclude("A[B,C]"))
+```
+
+### Set custom tag for each field in runtime: `CustomFieldTagMap()``.
+
+It will override the default tag settings defined in your struct.
+
+See example [here](https://github.com/iFaceless/portal/blob/65aaa0b537fd13607bd4d45c1016c1689dc53beb/_examples/todo/main.go#L36). 
+
 ## Special Tags
 ### Load Data from Model's Attribute: `attr`
 ```go
