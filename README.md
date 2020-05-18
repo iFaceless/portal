@@ -187,6 +187,12 @@ func SetDebug(v bool)
 func SetMaxPoolSize(size int)
 func CleanUp()
 ```
+
+# More Field Types
+- `field.Timestamp`: `time.Time` <-> unix timestamp.
+- `field.UpperString`: convert string to upper case.
+- `field.LowerString`: convert string to lower case.
+
 # License
 
 [portal](https://github.com/iFaceless/portal) is licensed under the [MIT license](./LICENSE). Please feel free and have fun~
