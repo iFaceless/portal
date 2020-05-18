@@ -24,7 +24,6 @@ func main() {
 		UserID: 1,
 		Title:  "Finish your jobs.",
 	}
-
 	printFullFields(&task)
 	printWithOnlyFields(&task, "Unknown")
 	printWithOnlyFields(&task, "ID", "User[id,Notifications[ID],AnotherNotifications[Title]]", "simple_user[id]")
@@ -46,7 +45,11 @@ func printFullFields(task *model.TaskModel) {
 		fmt.Printf("%++v", err)
 		return
 	}
-	data, _ := json.Marshal(taskSchema)
+	data, err := json.Marshal(taskSchema)
+	if err != nil {
+		fmt.Printf("%++v", err)
+		return
+	}
 	fmt.Println(string(data))
 }
 
