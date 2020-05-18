@@ -134,8 +134,21 @@ func (f *schemaField) hasMany() bool {
 	return f.Kind() == reflect.Slice
 }
 
-func (f *schemaField) method() string {
-	return f.settings["METH"]
+func (f *schemaField) method() (meth string, attrs []string) {
+	result, ok := f.settings["METH"]
+	if !ok {
+		return "", nil
+	}
+
+	for _, r := range strings.Split(result, ".") {
+		attrs = append(attrs, strings.TrimSpace(r))
+	}
+
+	if len(attrs) > 0 {
+		meth = attrs[0]
+		attrs = attrs[1:]
+	}
+	return
 }
 
 func (f *schemaField) hasMethod() bool {

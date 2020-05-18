@@ -78,11 +78,19 @@ func TestField_Method(t *testing.T) {
 	type FooSchema struct {
 		Name string
 		Bar  string `portal:"meth:GetBar"`
+		Foo  string `portal:"meth:GetFoo.Name"`
 	}
 
 	schema := newSchema(&FooSchema{})
 	f := newField(schema, schema.innerStruct().Field("Bar"))
-	assert.Equal(t, "GetBar", f.method())
+	m, attrs := f.method()
+	assert.Equal(t, "GetBar", m)
+	assert.Equal(t, 0, len(attrs))
+
+	f = newField(schema, schema.innerStruct().Field("Foo"))
+	m, attrs = f.method()
+	assert.Equal(t, "GetFoo", m)
+	assert.Equal(t, []string{"Name"}, attrs)
 }
 
 func TestField_HasMethod(t *testing.T) {

@@ -53,10 +53,23 @@ func (u *UserModel) Fullname3(ctx context.Context) (string, error) {
 	return fmt.Sprintf("user:%d", u.ID)
 }
 
+type BadgeModel {
+	Name string
+}
+
+func (u *UserModel) Badge(ctx context.Context) (*BadgeModel, error) {
+	return &BadgeModel{
+		Name: "Cool"
+	}, nil
+}
+
 // Schema definition
 type UserSchema struct {
 	ID                   string        `json:"id,omitempty"`
 	Name                 string        `json:"name,omitempty" portal:"attr:Fullname"`
+	// Chaining accessing is also supported.
+	// portal calls method `UserModel.Badge()`, then accesses Badge.Name field.
+	BadgeName            string        `json:"badge_name,omitempty" portal:"attr:Badge.Name"`
 }
 ```
 
@@ -65,6 +78,9 @@ type UserSchema struct {
 type TaskSchema struct {
 	Title       string      `json:"title,omitempty" portal:"meth:GetTitle"`
 	Description string      `json:"description,omitempty" portal:"meth:GetDescription"`
+	// Chaining accessing is also supported for method result.
+	ScheduleAt          *field.Timestamp   `json:"schedule_at,omitempty" portal:"meth:FetchSchedule.At"`
+	ScheduleDescription *string            `json:"schedule_description,omitempty" portal:"meth:FetchSchedule.Description"`
 }
 
 func (ts *TaskSchema) GetTitle(ctx context.Context, model *model.TaskModel) string {
@@ -77,6 +93,18 @@ func (ts *TaskSchema) GetDescription(model *model.TaskModel) (string, error) {
 	// Here we ignore the first context param.
 	// If method returns an error, portal will ignore the result.
 	return "Custom description", nil
+}
+
+type Schedule struct {
+	At          time.Time
+	Description string
+}
+
+func (ts *TaskSchema) FetchSchedule(model *model.TaskModel) *Schedule {
+	return &Schedule{
+		Description: "High priority",
+		At:          time.Now(),
+	}
 }
 ```
 

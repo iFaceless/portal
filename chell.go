@@ -222,14 +222,14 @@ func (c *Chell) dumpField(ctx context.Context, field *schemaField, value interfa
 	}
 
 	if !field.isNested() {
-		logger.Debugf("[portal.chell] dump normal field %s with value %v", field, value)
+		logger.Debugf("[portal.chell] dump normal field %s with value '%v'", field, value)
 		return field.setValue(value)
 	} else {
 		if field.hasMany() {
-			logger.Debugf("[portal.chell] dump nested slice field %s with value %v", field, value)
+			logger.Debugf("[portal.chell] dump nested slice field %s with value '%v'", field, value)
 			return c.dumpFieldNestedMany(ctx, field, value)
 		} else {
-			logger.Debugf("[portal.chell] dump nested field %s with value %v", field, value)
+			logger.Debugf("[portal.chell] dump nested field %s with value '%v'", field, value)
 			return c.dumpFieldNestedOne(ctx, field, value)
 		}
 	}

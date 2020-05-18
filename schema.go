@@ -138,9 +138,17 @@ func (s *schema) fieldValueFromSrc(ctx context.Context, field *schemaField, v in
 	if field.hasConstValue() {
 		val = field.constValue()
 	} else if field.hasMethod() {
-		ret, err := invokeMethodOfAnyType(ctx, s.rawValue, field.method(), v)
+		m, attrs := field.method()
+		if m == "" {
+			return nil, fmt.Errorf("empty method name")
+		}
+
+		ret, err := invokeMethodOfAnyType(ctx, s.rawValue, m, v)
 		if err != nil {
 			return nil, fmt.Errorf("failed to get value: %s", err)
+		}
+		if len(attrs) > 0 {
+			return nestedValue(ctx, ret, attrs)
 		}
 		return ret, nil
 	} else if field.hasChainingAttrs() {
