@@ -35,7 +35,8 @@ func nestedValue(ctx context.Context, any interface{}, chainingAttrs []string) (
 		return nil, nil
 	}
 
-	ret, err := invoke(ctx, rv, meth, attr)
+	cacheKey := genCacheKey(ctx, any, any, attr)
+	ret, err := invokeWithCache(ctx, rv, meth, attr, cacheKey)
 	if err != nil {
 		return nil, err
 	}
@@ -59,12 +60,24 @@ func invokeMethodOfAnyType(ctx context.Context, any interface{}, name string, ar
 	return invokeMethodOfReflectedValue(ctx, reflect.ValueOf(any), name, args...)
 }
 
+func invokeMethodOfAnyTypeWithCache(ctx context.Context, any interface{}, name string, cacheKey *string, args ...interface{}) (interface{}, error) {
+	return invokeMethodOfReflectedValueWithCache(ctx, reflect.ValueOf(any), name, cacheKey, args...)
+}
+
 func invokeMethodOfReflectedValue(ctx context.Context, any reflect.Value, name string, args ...interface{}) (interface{}, error) {
 	method, err := findMethod(any, name)
 	if err != nil {
 		return nil, err
 	}
 	return invoke(ctx, any, method, name, args...)
+}
+
+func invokeMethodOfReflectedValueWithCache(ctx context.Context, any reflect.Value, name string, cacheKey *string, args ...interface{}) (interface{}, error) {
+	method, err := findMethod(any, name)
+	if err != nil {
+		return nil, err
+	}
+	return invokeWithCache(ctx, any, method, name, cacheKey, args...)
 }
 
 func invoke(ctx context.Context, any reflect.Value, method reflect.Value, methodName string, args ...interface{}) (interface{}, error) {
@@ -129,6 +142,22 @@ func invoke(ctx context.Context, any reflect.Value, method reflect.Value, method
 	default:
 		return nil, errors.Errorf("unexpected results returned by method '%s'", methodNameRepr)
 	}
+}
+
+func invokeWithCache(ctx context.Context, any reflect.Value, method reflect.Value, methodName string, cacheKey *string, args ...interface{}) (interface{}, error) {
+	if cacheKey != nil {
+		if ret, err := DefaultCache.Get(ctx, *cacheKey); err == nil {
+			return ret, nil
+		}
+	}
+	ret, err := invoke(ctx, any, method, methodName, args...)
+	if err != nil {
+		if err = DefaultCache.Set(ctx, *cacheKey, ret); err != nil {
+			return ret, errors.WithStack(err)
+		}
+		return ret, nil
+	}
+	return ret, errors.WithStack(err)
 }
 
 func findMethod(any reflect.Value, name string) (reflect.Value, error) {

@@ -143,7 +143,8 @@ func (s *schema) fieldValueFromSrc(ctx context.Context, field *schemaField, v in
 			return nil, fmt.Errorf("empty method name")
 		}
 
-		ret, err := invokeMethodOfAnyType(ctx, s.rawValue, m, v)
+		cacheKey := genCacheKey(ctx, s.rawValue, v, m)
+		ret, err := invokeMethodOfAnyTypeWithCache(ctx, s.rawValue, m, cacheKey, v)
 		if err != nil {
 			return nil, fmt.Errorf("failed to get value: %s", err)
 		}
