@@ -14,7 +14,11 @@ type Student struct {
 	LastName  string
 }
 
+var shortNameCounter = 0
+var fullNameCounter = 0
+
 func (s *Student) FullName() string {
+	fullNameCounter += 1
 	return fmt.Sprintf("%s %s", s.FirstName, s.LastName)
 }
 
@@ -28,6 +32,7 @@ type StudentSchema struct {
 }
 
 func (sch *StudentSchema) GetShortName(s *Student) string {
+	shortNameCounter += 1
 	return string([]rune(s.FirstName)[0]) + string([]rune(s.LastName)[0])
 }
 
@@ -46,4 +51,16 @@ func TestDumpWithCache(t *testing.T) {
 
 	data, _ := json.Marshal(ss)
 	assert.Equal(t, `{"full_name":"Harry Potter","short_name":"HP"}`, string(data))
+
+	assert.Equal(t, 1, shortNameCounter)
+	assert.Equal(t, 1, fullNameCounter)
+
+	var ss2 StudentSchema
+	err = Dump(&ss2, &s)
+	assert.Nil(t, err)
+
+	assert.Equal(t, `{"full_name":"Harry Potter","short_name":"HP"}`, string(data))
+
+	assert.Equal(t, 1, shortNameCounter)
+	assert.Equal(t, 1, fullNameCounter)
 }

@@ -184,7 +184,7 @@ func (f *schemaField) hasConstValue() bool {
 }
 
 func (f *schemaField) isCacheDisabled() bool {
-	return f.tagHasOption("DISABLECACHE")
+	return IsCacheDisabled || f.tagHasOption("DISABLECACHE")
 }
 
 func (f *schemaField) defaultValue() interface{} {

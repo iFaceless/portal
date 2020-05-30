@@ -34,10 +34,17 @@ func (lru *LRUCache) Get(_ context.Context, key interface{}) (interface{}, error
 
 const DefaultLRUSize = 65536
 
-var DefaultCache Cache
+var DefaultCache = NewLRUCache(DefaultLRUSize)
+var PortalCache Cache
+var IsCacheDisabled bool
 
 func SetCache(c Cache) {
-	DefaultCache = c
+	IsCacheDisabled = false
+	PortalCache = c
+}
+
+func DisableCache() {
+	IsCacheDisabled = true
 }
 
 const cacheKeyTem = "%s#%s#%s"
@@ -47,10 +54,12 @@ const cacheKeyTem = "%s#%s#%s"
 // eg. meth:GetName UserSchema#GetName#123,
 // attr:Name UserModel#Name#123
 func genCacheKey(ctx context.Context, receiver interface{}, cacheObj interface{}, methodName string) *string {
-	ret, err := invokeMethodOfAnyType(ctx, cacheObj, "CacheID", nil)
+	ret, err := invokeMethodOfAnyType(ctx, cacheObj, "CacheID")
 	if err != nil {
+		fmt.Println(err)
 		return nil
 	}
+
 	cacheID, ok := ret.(string)
 	if !ok {
 		return nil

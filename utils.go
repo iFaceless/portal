@@ -152,15 +152,18 @@ func invoke(ctx context.Context, any reflect.Value, method reflect.Value, method
 
 func invokeWithCache(ctx context.Context, any reflect.Value, method reflect.Value, methodName string, cacheKey *string, args ...interface{}) (interface{}, error) {
 	if cacheKey != nil {
-		if ret, err := DefaultCache.Get(ctx, *cacheKey); err == nil {
+		if ret, err := PortalCache.Get(ctx, *cacheKey); err == nil {
 			return ret, nil
 		}
 	}
+
 	ret, err := invoke(ctx, any, method, methodName, args...)
-	if err != nil {
-		if err = DefaultCache.Set(ctx, *cacheKey, ret); err != nil {
+
+	if cacheKey != nil && err == nil {
+		if err = PortalCache.Set(ctx, *cacheKey, ret); err != nil {
 			return ret, errors.WithStack(err)
 		}
+		fmt.Println(*cacheKey, "Set!!")
 		return ret, nil
 	}
 	return ret, errors.WithStack(err)
