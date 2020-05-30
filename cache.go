@@ -39,11 +39,13 @@ var DefaultCache = NewLRUCache(DefaultLRUSize)
 var PortalCache Cache
 var IsCacheDisabled bool
 
+// SetCache enable cache strategy
 func SetCache(c Cache) {
 	IsCacheDisabled = false
 	PortalCache = c
 }
 
+// GlobalDisableCache disable cache strategy globally
 func GlobalDisableCache() {
 	IsCacheDisabled = true
 }
