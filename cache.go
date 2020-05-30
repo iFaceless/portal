@@ -3,7 +3,6 @@ package portal
 import (
 	"context"
 	"fmt"
-	"reflect"
 
 	"github.com/bluele/gcache"
 )
@@ -52,12 +51,10 @@ const cacheKeyTem = "%s#%s#%s"
 
 // genCacheKey generate cache key
 // rules: ReceiverName#MethodName#cacheObj_PointerAddr
-// eg. meth:GetName UserSchema#GetName#c000498150,
-// attr:Name UserModel#Name#c000498150
+// eg. meth:GetName UserSchema#GetName#0xc000498150,
+// attr:Name UserModel#Name#0xc000498150
 func genCacheKey(ctx context.Context, receiver interface{}, cacheObj interface{}, methodName string) *string {
-	rv := reflect.Indirect(reflect.ValueOf(cacheObj))
-	cacheID := fmt.Sprintf("%x", rv.UnsafeAddr())
-
+	cacheID := fmt.Sprintf("%p", cacheObj)
 	ck := fmt.Sprintf(cacheKeyTem, structName(receiver), methodName, cacheID)
 	return &ck
 }

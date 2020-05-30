@@ -9,6 +9,8 @@ import (
 	"github.com/fatih/structs"
 )
 
+const cacheDisableMethName = "DisableCache"
+
 type schema struct {
 	fieldAliasMapTagName string
 	rawValue             interface{}
@@ -53,7 +55,7 @@ func newSchema(v interface{}, parent ...*schema) *schema {
 	rawValue := schemaValue.Addr().Interface()
 
 	var cacheDisabled = func(in interface{}) bool {
-		ret, err := invokeMethodOfAnyType(context.TODO(), in, "DisableCache")
+		ret, err := invokeMethodOfAnyType(context.TODO(), in, cacheDisableMethName)
 		if err != nil {
 			return false
 		}

@@ -163,7 +163,6 @@ func invokeWithCache(ctx context.Context, any reflect.Value, method reflect.Valu
 		if err = PortalCache.Set(ctx, *cacheKey, ret); err != nil {
 			return ret, errors.WithStack(err)
 		}
-		fmt.Println(*cacheKey, "Set!!")
 		return ret, nil
 	}
 	return ret, errors.WithStack(err)

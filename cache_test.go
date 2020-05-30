@@ -112,7 +112,7 @@ func TestDumpNestedWithCache(t *testing.T) {
 	}
 
 	var cc ClassSchema
-	err := Dump(&cc, &c)
+	err := Dump(&cc, c)
 	assert.Nil(t, err)
 
 	assert.Equal(t, 1, shortNameCounter)
@@ -120,7 +120,7 @@ func TestDumpNestedWithCache(t *testing.T) {
 	assert.Equal(t, 1, infoCounter)
 	assert.Equal(t, 1, nameCounter)
 
-	err = Dump(&cc, &c)
+	err = Dump(&cc, c)
 	assert.Nil(t, err)
 
 	assert.Equal(t, 1, shortNameCounter)
