@@ -16,7 +16,12 @@ type ManagerModel struct {
 	UpdatedAt time.Time
 }
 
+func (m *ManagerModel) CacheID() string {
+	return fmt.Sprintf("%d", m.ID)
+}
+
 func (m *ManagerModel) Fullname() string {
+	time.Sleep(1000 * time.Millisecond)
 	return m.Name + "xixi_haha"
 }
 
@@ -27,6 +32,10 @@ type CompanyModel struct {
 	Addr      string
 	CreatedAt time.Time
 	UpdatedAt time.Time
+}
+
+func (m *CompanyModel) CacheID() string {
+	return fmt.Sprintf("%d", m.ID)
 }
 
 func (c *CompanyModel) Manager() *ManagerModel {
@@ -93,6 +102,7 @@ type CompanySchema struct {
 }
 
 func (c *CompanySchema) GetAddr(company *CompanyModel) string {
+	time.Sleep(10000 * time.Millisecond)
 	return fmt.Sprintf("custom_%s", company.Addr)
 }
 
@@ -174,5 +184,83 @@ func BenchmarkDumpOneIgnoreDBQuerySmallWorkerPool(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		var schemas *ProductSchema
 		_ = Dump(&schemas, products[0], Exclude("Company"))
+	}
+}
+
+type Hogwarts struct {
+	Houses []*House
+}
+
+func (h *Hogwarts) Addr() string {
+	time.Sleep(100 * time.Millisecond)
+	return "addr"
+}
+
+type House struct {
+	ID int
+}
+
+type HogwartsSchema struct {
+	Houses []*HouseSchema `portal:"nested;async"`
+	Addr   string         `portal:"attr:Addr"`
+}
+
+type HouseSchema struct {
+	Name  string `portal:"meth:GetMeta.Name;async"`
+	Color string `portal:"meth:GetMeta.Color;async"`
+}
+
+type Meta struct {
+	Name  string
+	Color string
+}
+
+func makeHouses(count int) (ret []*House) {
+	for i := 0; i < count; i++ {
+		ret = append(ret, &House{
+			ID: i,
+		})
+	}
+	return
+}
+
+func (s *HouseSchema) GetMeta(m *House) Meta {
+	time.Sleep(100 * time.Millisecond)
+	return Meta{
+		Name:  "name",
+		Color: "red",
+	}
+}
+
+// BenchmarkDumpManyWithCache-4                      	   33654	     39108 ns/op
+func BenchmarkDumpManyWithCache(b *testing.B) {
+	SetCache(DefaultCache)
+	defer DisableCache()
+	houses := makeHouses(1)
+	hogwarts := Hogwarts{
+		Houses: houses,
+	}
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		var schemas HogwartsSchema
+		_ = Dump(&schemas, hogwarts)
+		_ = Dump(&schemas, hogwarts)
+	}
+}
+
+// BenchmarkDumpManyWithoutCache-4                   	       2	 607578280 ns/op
+func BenchmarkDumpManyWithoutCache(b *testing.B) {
+	DisableCache()
+	houses := makeHouses(1)
+	hogwarts := Hogwarts{
+		Houses: houses,
+	}
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		var schemas HogwartsSchema
+		_ = Dump(&schemas, hogwarts)
+		_ = Dump(&schemas, hogwarts)
 	}
 }
