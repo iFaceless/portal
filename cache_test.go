@@ -14,8 +14,8 @@ type Student struct {
 	LastName  string
 }
 
-var shortNameCounter = 0
-var fullNameCounter = 0
+var shortNameCounter int
+var fullNameCounter int
 
 func (s *Student) FullName() string {
 	fullNameCounter += 1
@@ -38,6 +38,8 @@ func (sch *StudentSchema) GetShortName(s *Student) string {
 
 func TestDumpWithCache(t *testing.T) {
 	SetCache(DefaultCache)
+	shortNameCounter = 0
+	fullNameCounter = 0
 
 	s := Student{
 		ID:        1,
@@ -63,4 +65,35 @@ func TestDumpWithCache(t *testing.T) {
 
 	assert.Equal(t, 1, shortNameCounter)
 	assert.Equal(t, 1, fullNameCounter)
+}
+
+func TestDumpWithoutCache(t *testing.T) {
+	DisableCache()
+	shortNameCounter = 0
+	fullNameCounter = 0
+
+	s := Student{
+		ID:        1,
+		FirstName: "Harry",
+		LastName:  "Potter",
+	}
+
+	var ss StudentSchema
+	err := Dump(&ss, &s)
+	assert.Nil(t, err)
+
+	data, _ := json.Marshal(ss)
+	assert.Equal(t, `{"full_name":"Harry Potter","short_name":"HP"}`, string(data))
+
+	assert.Equal(t, 1, shortNameCounter)
+	assert.Equal(t, 1, fullNameCounter)
+
+	var ss2 StudentSchema
+	err = Dump(&ss2, &s)
+	assert.Nil(t, err)
+
+	assert.Equal(t, `{"full_name":"Harry Potter","short_name":"HP"}`, string(data))
+
+	assert.Equal(t, 2, shortNameCounter)
+	assert.Equal(t, 2, fullNameCounter)
 }
