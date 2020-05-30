@@ -177,6 +177,11 @@ To learn more about [portal](https://github.com/iFaceless/portal), please read t
 1. When dumping to multiple schemas, portal will do it concurrently if any fields in the schema are tagged with `protal:"async"`.
 1. You can always disable concurrency strategy with option `portal.DisableConcurrency()`.
 
+# Cache Strategy
+1. Cache is implemented in the field level when `portal.SetCache(portal.DefaultCache)` is configured.
+1. Cache will be disabled by tagging the fields with `portal:"disablecache"` or by defining a `DisableCache() bool` meth for the dst struct, or by a `portal.DisableCache()` option setting while dumping.
+1. The cache key strategy of the source struct can be redefined by implementing a `CacheID() string` method, or using the source struct's address by default.
+
 # Core APIs
 
 ```go

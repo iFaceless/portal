@@ -150,6 +150,27 @@ type UserSchema struct {
 
 ```
 
+### Disable Cache for Field: `disablecache`
+```go
+type Student struct {
+    ID int
+}
+
+type info struct {
+    Name   string
+    Height int
+}
+
+func(s *Student) Info() info {
+    return &info{Name: "name", Height: 180}
+}
+
+type StudentSchema struct {
+    Name   string `json:"name" portal:"attr:Info.Name,disablecache"`
+    Height int    `json:"height" portal:"attr:Info.Height,disablecache"`
+}
+```
+
 ### Set Default Value for Field: `default`
 
 Only works for types: pointer/slice/map. For basic types (integer, string, bool), default value will be converted and set to field directly. For complex types (eg. map/slice/pointer to custom struct), set default to `AUTO_INIT`, portal will initialize field to its zero value. 
