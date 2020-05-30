@@ -17,6 +17,8 @@ type schema struct {
 	fields               []*schemaField
 
 	parent *schema
+
+	cacheDisabled bool
 }
 
 func newSchema(v interface{}, parent ...*schema) *schema {
@@ -48,11 +50,25 @@ func newSchema(v interface{}, parent ...*schema) *schema {
 		panic("expect a pointer to struct")
 	}
 
+	rawValue := schemaValue.Addr().Interface()
+
+	var cacheDisabled = func(in interface{}) bool {
+		ret, err := invokeMethodOfAnyType(context.TODO(), in, "DisableCache")
+		if err != nil {
+			return false
+		}
+		if disable, ok := ret.(bool); ok {
+			return disable
+		}
+		return false
+	}(rawValue)
+
 	sch := &schema{
 		schemaStruct:         structs.New(schemaValue.Addr().Interface()),
 		availableFieldNames:  make(map[string]bool),
-		rawValue:             schemaValue.Addr().Interface(),
+		rawValue:             rawValue,
 		fieldAliasMapTagName: "json",
+		cacheDisabled:        cacheDisabled,
 	}
 
 	if len(parent) > 0 {

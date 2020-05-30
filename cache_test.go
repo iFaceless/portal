@@ -49,7 +49,7 @@ func (s *Student) Info() *studentInfo {
 
 type ClassSchema struct {
 	Students []*StudentSchema `json:"students" portal:"nested;async"`
-	Name     string           `json:"name" portal:"attr:Name;disablecache"`
+	Name     string           `json:"name" portal:"attr:Name"`
 }
 
 type StudentSchema struct {
@@ -126,6 +126,62 @@ func TestDumpNestedWithCache(t *testing.T) {
 	assert.Equal(t, 1, shortNameCounter)
 	assert.Equal(t, 1, fullNameCounter)
 	assert.Equal(t, 1, infoCounter)
-	// disablecache tag test
-	assert.Equal(t, 2, nameCounter)
+	assert.Equal(t, 1, nameCounter)
+}
+
+var weightCounter int
+
+type Food struct {
+	ID int
+}
+
+func (f *Food) Weight() int {
+	weightCounter += 1
+	return 100
+}
+
+type FoodSchema struct {
+	Weight string `portal:"attr:Weight"`
+}
+
+func (s *FoodSchema) DisableCache() bool {
+	return true
+}
+
+type FoodSchemaTwo struct {
+	Weight string `portal:"attr:Weight;disablecache"`
+}
+
+type FoodSchemaThree struct {
+	Weight string `portal:"attr:Weight"`
+}
+
+func TestDumpWithCacheDisabled(t *testing.T) {
+	SetCache(DefaultCache)
+	defer DisableCache()
+	weightCounter = 0
+
+	f := Food{
+		ID: 1,
+	}
+
+	var ff FoodSchema
+	Dump(&ff, &f)
+	assert.Equal(t, 1, weightCounter)
+
+	Dump(&ff, &f)
+	assert.Equal(t, 2, weightCounter)
+
+	var ff2 FoodSchemaTwo
+	Dump(&ff2, &f)
+	assert.Equal(t, 3, weightCounter)
+
+	var ff3 FoodSchemaThree
+	Dump(&ff3, &f)
+	assert.Equal(t, 4, weightCounter)
+	Dump(&ff3, &f)
+	assert.Equal(t, 4, weightCounter)
+	DisableCache()
+	Dump(&ff3, &f)
+	assert.Equal(t, 5, weightCounter)
 }
