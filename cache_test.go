@@ -28,6 +28,10 @@ type Student struct {
 	LastName  string
 }
 
+func (s *Student) CacheID() string {
+	return fmt.Sprintf("v1:%p", s)
+}
+
 type studentInfo struct {
 	Age    int
 	Height int
