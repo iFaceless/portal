@@ -40,17 +40,17 @@ func TestSchema(t *testing.T) {
 	}{10, &SchoolSchema{Name: "test school"}}
 
 	idField := newField(schema, schema.schemaStruct.Field("ID"))
-	val, err := schema.fieldValueFromSrc(context.TODO(), idField, user)
+	val, err := schema.fieldValueFromSrc(context.TODO(), idField, user, false)
 	assert.Nil(t, err)
 	assert.Equal(t, 10, val)
 
 	nameField := newField(schema, schema.schemaStruct.Field("Name"))
-	val, err = schema.fieldValueFromSrc(context.TODO(), nameField, user)
+	val, err = schema.fieldValueFromSrc(context.TODO(), nameField, user, false)
 	assert.Nil(t, err)
 	assert.Equal(t, "test", val)
 
 	schoolField := newField(schema, schema.schemaStruct.Field("School"))
-	val, err = schema.fieldValueFromSrc(context.TODO(), schoolField, user)
+	val, err = schema.fieldValueFromSrc(context.TODO(), schoolField, user, false)
 	assert.Nil(t, err)
 	assert.Equal(t, &SchoolSchema{Name: "test school", Addr: ""}, val)
 }

@@ -44,7 +44,7 @@ func SetCache(c Cache) {
 	PortalCache = c
 }
 
-func DisableCache() {
+func GlobalDisableCache() {
 	IsCacheDisabled = true
 }
 

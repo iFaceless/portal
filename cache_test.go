@@ -70,7 +70,7 @@ func (sch *StudentSchema) GetShortName(s *Student) string {
 
 func TestDumpWithCache(t *testing.T) {
 	SetCache(DefaultCache)
-	defer DisableCache()
+	defer GlobalDisableCache()
 	shortNameCounter = 0
 	fullNameCounter = 0
 	infoCounter = 0
@@ -99,7 +99,7 @@ func TestDumpWithCache(t *testing.T) {
 
 func TestDumpNestedWithCache(t *testing.T) {
 	SetCache(DefaultCache)
-	defer DisableCache()
+	defer GlobalDisableCache()
 	shortNameCounter = 0
 	fullNameCounter = 0
 	infoCounter = 0
@@ -162,7 +162,7 @@ type FoodSchemaThree struct {
 
 func TestDumpWithCacheDisabled(t *testing.T) {
 	SetCache(DefaultCache)
-	defer DisableCache()
+	defer GlobalDisableCache()
 	weightCounter = 0
 
 	f := Food{
@@ -185,7 +185,9 @@ func TestDumpWithCacheDisabled(t *testing.T) {
 	assert.Equal(t, 4, weightCounter)
 	Dump(&ff3, &f)
 	assert.Equal(t, 4, weightCounter)
-	DisableCache()
-	Dump(&ff3, &f)
+	Dump(&ff3, &f, DisableCache())
 	assert.Equal(t, 5, weightCounter)
+	GlobalDisableCache()
+	Dump(&ff3, &f)
+	assert.Equal(t, 6, weightCounter)
 }

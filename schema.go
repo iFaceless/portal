@@ -148,7 +148,7 @@ func (s *schema) innerStruct() *structs.Struct {
 	return s.schemaStruct
 }
 
-func (s *schema) fieldValueFromSrc(ctx context.Context, field *schemaField, v interface{}) (val interface{}, err error) {
+func (s *schema) fieldValueFromSrc(ctx context.Context, field *schemaField, v interface{}, noCache bool) (val interface{}, err error) {
 	if isNil(v) || !structs.IsStruct(v) {
 		return nil, fmt.Errorf("failed to get value for field %s, empty input data %v", field, v)
 	}
@@ -163,7 +163,7 @@ func (s *schema) fieldValueFromSrc(ctx context.Context, field *schemaField, v in
 
 		var ret interface{}
 		var err error
-		disableCache := field.isCacheDisabled()
+		disableCache := noCache || field.isCacheDisabled()
 		if disableCache {
 			ret, err = invokeMethodOfAnyType(ctx, s.rawValue, m, v)
 		} else {
@@ -179,7 +179,8 @@ func (s *schema) fieldValueFromSrc(ctx context.Context, field *schemaField, v in
 		}
 		return ret, nil
 	} else if field.hasChainingAttrs() {
-		return nestedValue(ctx, v, field.chainingAttrs(), !field.isCacheDisabled())
+		disableCache := noCache || field.isCacheDisabled()
+		return nestedValue(ctx, v, field.chainingAttrs(), !disableCache)
 	} else {
 		return nestedValue(ctx, v, []string{field.Name()}, false)
 	}

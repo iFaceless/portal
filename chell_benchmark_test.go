@@ -225,7 +225,7 @@ func (s *HouseSchema) GetMeta(m *House) Meta {
 // BenchmarkDumpManyWithCache-4                      	   33654	     39108 ns/op
 func BenchmarkDumpManyWithCache(b *testing.B) {
 	SetCache(DefaultCache)
-	defer DisableCache()
+	defer GlobalDisableCache()
 	houses := makeHouses(1)
 	hogwarts := Hogwarts{
 		Houses: houses,
@@ -241,7 +241,7 @@ func BenchmarkDumpManyWithCache(b *testing.B) {
 
 // BenchmarkDumpManyWithoutCache-4                   	       2	 607578280 ns/op
 func BenchmarkDumpManyWithoutCache(b *testing.B) {
-	DisableCache()
+	GlobalDisableCache()
 	houses := makeHouses(1)
 	hogwarts := Hogwarts{
 		Houses: houses,
