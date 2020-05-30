@@ -33,11 +33,18 @@ func (lru *LRUCache) Get(_ context.Context, key interface{}) (interface{}, error
 	return lru.c.Get(key)
 }
 
+const (
+	cacheKeyTem     = "%s#%s#%s"
+	cacheIDMethName = "CacheID"
+)
+
 const DefaultLRUSize = 65536
 
-var DefaultCache = NewLRUCache(DefaultLRUSize)
-var PortalCache Cache
-var IsCacheDisabled bool
+var (
+	DefaultCache    = NewLRUCache(DefaultLRUSize)
+	PortalCache     Cache
+	IsCacheDisabled bool
+)
 
 // SetCache enable cache strategy
 func SetCache(c Cache) {
@@ -49,9 +56,6 @@ func SetCache(c Cache) {
 func GlobalDisableCache() {
 	IsCacheDisabled = true
 }
-
-const cacheKeyTem = "%s#%s#%s"
-const cacheIDMethName = "CacheID"
 
 // genCacheKey generate cache key
 // rules: ReceiverName#MethodName#cacheID

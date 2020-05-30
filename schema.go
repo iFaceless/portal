@@ -55,13 +55,12 @@ func newSchema(v interface{}, parent ...*schema) *schema {
 	rawValue := schemaValue.Addr().Interface()
 
 	var cacheDisabled = func(in interface{}) bool {
-		ret, err := invokeMethodOfAnyType(context.TODO(), in, cacheDisableMethName)
-		if err != nil {
-			return false
+		if ret, err := invokeMethodOfAnyType(context.TODO(), in, cacheDisableMethName); err == nil {
+			if disable, ok := ret.(bool); ok {
+				return disable
+			}
 		}
-		if disable, ok := ret.(bool); ok {
-			return disable
-		}
+
 		return false
 	}(rawValue)
 

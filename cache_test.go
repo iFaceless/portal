@@ -8,10 +8,12 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-var shortNameCounter int
-var fullNameCounter int
-var infoCounter int
-var nameCounter int
+var (
+	shortNameCounter int
+	fullNameCounter  int
+	infoCounter      int
+	nameCounter      int
+)
 
 type Class struct {
 	Students []*Student
