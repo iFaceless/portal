@@ -36,10 +36,6 @@ const DefaultLRUSize = 65536
 
 var DefaultCache Cache
 
-func init() {
-	SetCache(NewLRUCache(DefaultLRUSize))
-}
-
 func SetCache(c Cache) {
 	DefaultCache = c
 }

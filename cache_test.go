@@ -32,8 +32,7 @@ func (sch *StudentSchema) GetShortName(s *Student) string {
 }
 
 func TestDumpWithCache(t *testing.T) {
-	// SetCache(DefaultCache)
-	// defer DisableCache()
+	SetCache(DefaultCache)
 
 	s := Student{
 		ID:        1,
