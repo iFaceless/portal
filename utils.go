@@ -8,7 +8,7 @@ import (
 	"github.com/pkg/errors"
 )
 
-func nestedValue(ctx context.Context, any interface{}, chainingAttrs []string) (interface{}, error) {
+func nestedValue(ctx context.Context, any interface{}, chainingAttrs []string, enableCache bool) (interface{}, error) {
 	if len(chainingAttrs) == 0 {
 		return any, nil
 	}
@@ -25,7 +25,7 @@ func nestedValue(ctx context.Context, any interface{}, chainingAttrs []string) (
 		if reflect.Indirect(rv).Kind() == reflect.Struct {
 			field := reflect.Indirect(rv).FieldByName(attr)
 			if field.IsValid() {
-				return nestedValue(ctx, field.Interface(), chainingAttrs[1:])
+				return nestedValue(ctx, field.Interface(), chainingAttrs[1:], false)
 			}
 		}
 
@@ -35,12 +35,18 @@ func nestedValue(ctx context.Context, any interface{}, chainingAttrs []string) (
 		return nil, nil
 	}
 
-	cacheKey := genCacheKey(ctx, any, any, attr)
-	ret, err := invokeWithCache(ctx, rv, meth, attr, cacheKey)
+	var ret interface{}
+	if enableCache {
+		cacheKey := genCacheKey(ctx, any, any, attr)
+		ret, err = invokeWithCache(ctx, rv, meth, attr, cacheKey)
+	} else {
+		ret, err = invoke(ctx, rv, meth, attr)
+	}
+
 	if err != nil {
 		return nil, err
 	}
-	return nestedValue(ctx, ret, chainingAttrs[1:])
+	return nestedValue(ctx, ret, chainingAttrs[1:], enableCache)
 }
 
 // invokeMethodOfAnyType calls the specified method of a value and return results.

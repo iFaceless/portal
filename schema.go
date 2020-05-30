@@ -143,19 +143,27 @@ func (s *schema) fieldValueFromSrc(ctx context.Context, field *schemaField, v in
 			return nil, fmt.Errorf("empty method name")
 		}
 
-		cacheKey := genCacheKey(ctx, s.rawValue, v, m)
-		ret, err := invokeMethodOfAnyTypeWithCache(ctx, s.rawValue, m, cacheKey, v)
+		var ret interface{}
+		var err error
+		disableCache := field.isCacheDisabled()
+		if disableCache {
+			ret, err = invokeMethodOfAnyType(ctx, s.rawValue, m, v)
+		} else {
+			cacheKey := genCacheKey(ctx, s.rawValue, v, m)
+			ret, err = invokeMethodOfAnyTypeWithCache(ctx, s.rawValue, m, cacheKey, v)
+		}
+
 		if err != nil {
 			return nil, fmt.Errorf("failed to get value: %s", err)
 		}
 		if len(attrs) > 0 {
-			return nestedValue(ctx, ret, attrs)
+			return nestedValue(ctx, ret, attrs, !disableCache)
 		}
 		return ret, nil
 	} else if field.hasChainingAttrs() {
-		return nestedValue(ctx, v, field.chainingAttrs())
+		return nestedValue(ctx, v, field.chainingAttrs(), !field.isCacheDisabled())
 	} else {
-		return nestedValue(ctx, v, []string{field.Name()})
+		return nestedValue(ctx, v, []string{field.Name()}, false)
 	}
 
 	return

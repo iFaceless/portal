@@ -183,6 +183,10 @@ func (f *schemaField) hasConstValue() bool {
 	return f.tagHasOption("CONST")
 }
 
+func (f *schemaField) isCacheDisabled() bool {
+	return f.tagHasOption("DISABLECACHE")
+}
+
 func (f *schemaField) defaultValue() interface{} {
 	val, ok := f.settings["DEFAULT"]
 	if !ok {
