@@ -16,12 +16,7 @@ type ManagerModel struct {
 	UpdatedAt time.Time
 }
 
-func (m *ManagerModel) CacheID() string {
-	return fmt.Sprintf("%d", m.ID)
-}
-
 func (m *ManagerModel) Fullname() string {
-	time.Sleep(1000 * time.Millisecond)
 	return m.Name + "xixi_haha"
 }
 
@@ -32,10 +27,6 @@ type CompanyModel struct {
 	Addr      string
 	CreatedAt time.Time
 	UpdatedAt time.Time
-}
-
-func (m *CompanyModel) CacheID() string {
-	return fmt.Sprintf("%d", m.ID)
 }
 
 func (c *CompanyModel) Manager() *ManagerModel {
@@ -102,7 +93,6 @@ type CompanySchema struct {
 }
 
 func (c *CompanySchema) GetAddr(company *CompanyModel) string {
-	time.Sleep(10000 * time.Millisecond)
 	return fmt.Sprintf("custom_%s", company.Addr)
 }
 
