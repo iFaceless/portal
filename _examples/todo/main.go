@@ -19,7 +19,7 @@ func main() {
 	portal.SetMaxPoolSize(1024)
 	portal.SetDebug(true)
 	portal.SetCache(portal.DefaultCache)
-	defer portal.GlobalDisableCache()
+	defer portal.SetCache(nil)
 
 	task := model.TaskModel{
 		ID:     1,

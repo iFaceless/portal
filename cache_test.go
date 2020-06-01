@@ -30,10 +30,6 @@ type Student struct {
 	LastName  string
 }
 
-func (s *Student) CacheID() string {
-	return fmt.Sprintf("v1:%p", s)
-}
-
 type studentInfo struct {
 	Age    int
 	Height int
@@ -72,7 +68,7 @@ func (sch *StudentSchema) GetShortName(s *Student) string {
 
 func TestDumpWithCache(t *testing.T) {
 	SetCache(DefaultCache)
-	defer GlobalDisableCache()
+	defer SetCache(nil)
 	shortNameCounter = 0
 	fullNameCounter = 0
 	infoCounter = 0
@@ -101,7 +97,7 @@ func TestDumpWithCache(t *testing.T) {
 
 func TestDumpNestedWithCache(t *testing.T) {
 	SetCache(DefaultCache)
-	defer GlobalDisableCache()
+	defer SetCache(nil)
 	shortNameCounter = 0
 	fullNameCounter = 0
 	infoCounter = 0
@@ -150,7 +146,7 @@ type FoodSchema struct {
 	Weight string `portal:"attr:Weight"`
 }
 
-func (s *FoodSchema) DisableCache() bool {
+func (s *FoodSchema) PortalDisableCache() bool {
 	return true
 }
 
@@ -164,7 +160,7 @@ type FoodSchemaThree struct {
 
 func TestDumpWithCacheDisabled(t *testing.T) {
 	SetCache(DefaultCache)
-	defer GlobalDisableCache()
+	defer SetCache(nil)
 	weightCounter = 0
 
 	f := Food{
@@ -189,7 +185,7 @@ func TestDumpWithCacheDisabled(t *testing.T) {
 	assert.Equal(t, 4, weightCounter)
 	Dump(&ff3, &f, DisableCache())
 	assert.Equal(t, 5, weightCounter)
-	GlobalDisableCache()
+	SetCache(nil)
 	Dump(&ff3, &f)
 	assert.Equal(t, 6, weightCounter)
 }

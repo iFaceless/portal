@@ -3,12 +3,11 @@ package portal
 import (
 	"context"
 	"fmt"
-	"reflect"
 
 	"github.com/bluele/gcache"
 )
 
-type Cache interface {
+type Cacher interface {
 	Set(ctx context.Context, key interface{}, value interface{}) error
 	Get(ctx context.Context, key interface{}) (interface{}, error)
 }
@@ -23,7 +22,7 @@ func NewLRUCache(size int) *LRUCache {
 	}
 }
 
-var _ Cache = (*LRUCache)(nil)
+var _ Cacher = (*LRUCache)(nil)
 
 func (lru *LRUCache) Set(_ context.Context, key, value interface{}) error {
 	return lru.c.Set(key, value)
@@ -34,27 +33,24 @@ func (lru *LRUCache) Get(_ context.Context, key interface{}) (interface{}, error
 }
 
 const (
-	cacheKeyTem     = "%s#%s#%s"
-	cacheIDMethName = "CacheID"
+	cacheKeyTem    = "%s#%s#%s"
+	defaultLRUSize = 8192
 )
 
-const DefaultLRUSize = 65536
-
 var (
-	DefaultCache    = NewLRUCache(DefaultLRUSize)
-	PortalCache     Cache
-	IsCacheDisabled bool
+	DefaultCache    = NewLRUCache(defaultLRUSize)
+	portalCache     Cacher
+	isCacheDisabled bool
 )
 
 // SetCache enable cache strategy
-func SetCache(c Cache) {
-	IsCacheDisabled = false
-	PortalCache = c
-}
-
-// GlobalDisableCache disable cache strategy globally
-func GlobalDisableCache() {
-	IsCacheDisabled = true
+func SetCache(c Cacher) {
+	if c == nil {
+		isCacheDisabled = true
+		return
+	}
+	isCacheDisabled = false
+	portalCache = c
 }
 
 // genCacheKey generate cache key
@@ -62,20 +58,7 @@ func GlobalDisableCache() {
 // eg. meth:GetName UserSchema#GetName#0xc000498150,
 // attr:Name UserModel#Name#0xc000498150
 func genCacheKey(ctx context.Context, receiver interface{}, cacheObj interface{}, methodName string) *string {
-	var cacheID string
-	var ok bool
-
-	// if src's CacheID is not defined, use default cacheID
-	ret, err := invokeMethodOfAnyType(ctx, cacheObj, cacheIDMethName)
-	if err != nil {
-		cacheID = defaultCacheID(cacheObj)
-	} else {
-		cacheID, ok = ret.(string)
-		if !ok {
-			logger.Warnf("'%s.%s' return value must be a string", reflect.TypeOf(cacheObj), cacheIDMethName)
-			return nil
-		}
-	}
+	cacheID := defaultCacheID(cacheObj)
 
 	ck := fmt.Sprintf(cacheKeyTem, structName(receiver), methodName, cacheID)
 	return &ck
@@ -84,4 +67,8 @@ func genCacheKey(ctx context.Context, receiver interface{}, cacheObj interface{}
 // defaultCacheID is the addr of src struct
 func defaultCacheID(cacheObj interface{}) string {
 	return fmt.Sprintf("%p", cacheObj)
+}
+
+type cachable interface {
+	PortalDisableCache() bool
 }

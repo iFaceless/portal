@@ -178,7 +178,6 @@ func main() {
 # 缓存策略控制
 1. 当 `portal.SetCache(portal.DefaultCache)` 被设置之后，字段维度的缓存会被开启；
 1. 以下情况下缓存会被禁用。Schema 字段中标记了 `portal:"diablecache"` 的 Tag； 被序列化的 Schema 定义了 `DisableCache() bool` 方法；序列化时设置了 `portal.DisableCache()` 选项；
-1. 通过重新定义 `CacheID() string` 方法， 你可以重新定义被序列化结构体的缓存 key 生成策略；否则将使用默认策略，即通过结构体的地址当作唯一标识生成缓存 key。
 
 # 核心 APIs
 
