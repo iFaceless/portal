@@ -201,15 +201,15 @@ portal.Dump(&ret, &user) // => will still get user_1's grade
 ```
 A better way might be
 ```go
-portal.Dump(&ret, &user) // => user_1's grade
+portal.Dump(&ret, &user) // => user_1's score
 user2 := User{ID: 2}
-portal.Dump(&ret, &user) // => user_2's grade
+portal.Dump(&ret, &user) // => user_2's score
 
 // 或者下面这样
-portal.Dump(&ret, &user) // => user_1's grade
+portal.Dump(&ret, &user) // => user_1's score
 user = copy(user)
 user.ID = 2
-portal.Dump(&ret, &user) // => user_2's grade
+portal.Dump(&ret, &user) // => user_2's score
 ````
 
 # 核心 APIs
