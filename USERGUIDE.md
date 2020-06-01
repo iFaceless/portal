@@ -30,6 +30,11 @@ It will override the default tag settings defined in your struct.
 
 See example [here](https://github.com/iFaceless/portal/blob/65aaa0b537fd13607bd4d45c1016c1689dc53beb/_examples/todo/main.go#L36). 
 
+### Disable cache for a single dump
+```go
+portal.Dump(&dst, &src, portal.DisableCache())
+```
+
 ## Special Tags
 ### Load Data from Model's Attribute: `attr`
 ```go
@@ -150,6 +155,27 @@ type UserSchema struct {
 
 ```
 
+### Disable Cache for Field: `disablecache`
+```go
+type Student struct {
+    ID int
+}
+
+type info struct {
+    Name   string
+    Height int
+}
+
+func(s *Student) Info() info {
+    return &info{Name: "name", Height: 180}
+}
+
+type StudentSchema struct {
+    Name   string `json:"name" portal:"attr:Info.Name,disablecache"`
+    Height int    `json:"height" portal:"attr:Info.Height,disablecache"`
+}
+```
+
 ### Set Default Value for Field: `default`
 
 Only works for types: pointer/slice/map. For basic types (integer, string, bool), default value will be converted and set to field directly. For complex types (eg. map/slice/pointer to custom struct), set default to `AUTO_INIT`, portal will initialize field to its zero value. 
@@ -215,3 +241,59 @@ func (t *Timestamp) UnmarshalJSON(data []byte) error {
 	return nil
 }
 ```
+
+## Use Cache to speed up
+
+Values from functions will be cached for schema fields tagged by `ATTR` and `METH`. You can choose not to use it by disabling the cache of a single field, a whole schema, or simple for one time `Dump`.
+
+```go
+type StudentModel struct {
+	ID int
+}
+
+// the Meta might be costful
+func (m *StudentModel) Meta() *meta {
+    time.Sleep(100 * time.Millisecond)
+	return &meta{ID: 1}
+}
+
+type StudentSchema struct {
+	Name     string           `json:"name" portal:"attr:Meta.Name"`
+	Height   int              `json:"height" portal:"attr:Meta.Height"`
+	Subjects []*SubjectSchema `json:"subjects" portal:"nested;async"`
+    
+    // NextID is a Set method, which must not be cached
+	NextID   int              `json:"next_id" portal:"meth:SetNextID;disablecache"` // no using cache
+}
+
+func (s *StudentSchema) SetNextID(m *StudentModel) int {
+	return m.ID + 1
+}
+
+type SubjectSchema struct {
+	Name    string `json:"name" portal:"meth:GetInfo.Name"`
+	Teacher string `json:"teacher" portal:"meth:GetInfo.Teacher"`
+}
+
+// If you don't want SubjectSchema to use cache, forbidden it by implementing a PortalDisableCache method.
+func (s *StudentSchema) PortalDisableCache() bool { return true }
+
+func (s *StudentSchema) GetInfo(m *StudentModel) info {
+	return info{Name: "subject name", teacher: "teacher"}
+}
+
+var m = StudentModel{ID: 1}
+var s StudentSchema
+
+// setup cache
+portal.SetCache(portal.DefaultCache)
+defer portal.SetCache(nil)
+
+// Not using cache for this dump
+portal.Dump(&s, &m, portal.DisableCache())
+
+// StudentSchema.NextID and whole SubjectSchema are not using cache
+portal.Dump(&s, &m)
+```
+
+Incidently, portal.Cacher interface{} are expected to be implemented if you'd like to replace the portal.DefaultCache and to use your own.

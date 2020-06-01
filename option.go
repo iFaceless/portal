@@ -71,3 +71,11 @@ func CustomFieldTagMap(in map[string]string) option {
 		return nil
 	}
 }
+
+// DisableCache disables cache strategy
+func DisableCache() option {
+	return func(c *Chell) error {
+		c.disableCache = true
+		return nil
+	}
+}

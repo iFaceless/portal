@@ -3,6 +3,7 @@ module github.com/ifaceless/portal
 go 1.13
 
 require (
+	github.com/bluele/gcache v0.0.0-20190518031135-bc40bd653833
 	github.com/fatih/structs v1.1.0
 	github.com/kr/pretty v0.1.0 // indirect
 	github.com/panjf2000/ants/v2 v2.1.1

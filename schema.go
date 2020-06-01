@@ -17,6 +17,8 @@ type schema struct {
 	fields               []*schemaField
 
 	parent *schema
+
+	cacheDisabled bool
 }
 
 func newSchema(v interface{}, parent ...*schema) *schema {
@@ -48,11 +50,21 @@ func newSchema(v interface{}, parent ...*schema) *schema {
 		panic("expect a pointer to struct")
 	}
 
+	rawValue := schemaValue.Addr().Interface()
+
+	var cacheDisabled = func(in interface{}) bool {
+		if ret, ok := in.(cachable); ok {
+			return ret.PortalDisableCache()
+		}
+		return false
+	}(rawValue)
+
 	sch := &schema{
 		schemaStruct:         structs.New(schemaValue.Addr().Interface()),
 		availableFieldNames:  make(map[string]bool),
-		rawValue:             schemaValue.Addr().Interface(),
+		rawValue:             rawValue,
 		fieldAliasMapTagName: "json",
+		cacheDisabled:        cacheDisabled,
 	}
 
 	if len(parent) > 0 {
@@ -130,7 +142,7 @@ func (s *schema) innerStruct() *structs.Struct {
 	return s.schemaStruct
 }
 
-func (s *schema) fieldValueFromSrc(ctx context.Context, field *schemaField, v interface{}) (val interface{}, err error) {
+func (s *schema) fieldValueFromSrc(ctx context.Context, field *schemaField, v interface{}, noCache bool) (val interface{}, err error) {
 	if isNil(v) || !structs.IsStruct(v) {
 		return nil, fmt.Errorf("failed to get value for field %s, empty input data %v", field, v)
 	}
@@ -143,18 +155,28 @@ func (s *schema) fieldValueFromSrc(ctx context.Context, field *schemaField, v in
 			return nil, fmt.Errorf("empty method name")
 		}
 
-		ret, err := invokeMethodOfAnyType(ctx, s.rawValue, m, v)
+		var ret interface{}
+		var err error
+		disableCache := noCache || field.isCacheDisabled()
+		if disableCache {
+			ret, err = invokeMethodOfAnyType(ctx, s.rawValue, m, v)
+		} else {
+			cacheKey := genCacheKey(ctx, s.rawValue, v, m)
+			ret, err = invokeMethodOfAnyTypeWithCache(ctx, s.rawValue, m, cacheKey, v)
+		}
+
 		if err != nil {
 			return nil, fmt.Errorf("failed to get value: %s", err)
 		}
 		if len(attrs) > 0 {
-			return nestedValue(ctx, ret, attrs)
+			return nestedValue(ctx, ret, attrs, !disableCache)
 		}
 		return ret, nil
 	} else if field.hasChainingAttrs() {
-		return nestedValue(ctx, v, field.chainingAttrs())
+		disableCache := noCache || field.isCacheDisabled()
+		return nestedValue(ctx, v, field.chainingAttrs(), !disableCache)
 	} else {
-		return nestedValue(ctx, v, []string{field.Name()})
+		return nestedValue(ctx, v, []string{field.Name()}, false)
 	}
 
 	return

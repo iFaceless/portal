@@ -13,6 +13,7 @@ type Chell struct {
 	// json, yaml etc.
 	fieldAliasMapTagName string
 	disableConcurrency   bool
+	disableCache         bool
 	onlyFieldFilters     map[int][]*filterNode
 	excludeFieldFilters  map[int][]*filterNode
 
@@ -147,7 +148,7 @@ func (c *Chell) dumpSyncFields(ctx context.Context, dst *schema, src interface{}
 	logger.Debugf("[portal.chell] dump sync fields: %s", syncFields)
 	for _, field := range syncFields {
 		logger.Debugf("[portal.chell] processing sync field '%s'", field)
-		val, err := dst.fieldValueFromSrc(ctx, field, src)
+		val, err := dst.fieldValueFromSrc(ctx, field, src, c.disableCache)
 		if err != nil {
 			return err
 		}
@@ -187,7 +188,7 @@ func (c *Chell) dumpAsyncFields(ctx context.Context, dst *schema, src interface{
 		func(payload interface{}) (interface{}, error) {
 			p := payload.(*Payload)
 			logger.Debugf("[portal.chell] processing async field '%s'", p.field)
-			val, err := dst.fieldValueFromSrc(ctx, p.field, src)
+			val, err := dst.fieldValueFromSrc(ctx, p.field, src, c.disableCache)
 			logger.Debugf("[portal.chell] async field '%s' got value '%v'", p.field, val)
 			return &Result{field: p.field, data: val}, err
 		},

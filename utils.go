@@ -8,7 +8,7 @@ import (
 	"github.com/pkg/errors"
 )
 
-func nestedValue(ctx context.Context, any interface{}, chainingAttrs []string) (interface{}, error) {
+func nestedValue(ctx context.Context, any interface{}, chainingAttrs []string, enableCache bool) (interface{}, error) {
 	if len(chainingAttrs) == 0 {
 		return any, nil
 	}
@@ -25,7 +25,7 @@ func nestedValue(ctx context.Context, any interface{}, chainingAttrs []string) (
 		if reflect.Indirect(rv).Kind() == reflect.Struct {
 			field := reflect.Indirect(rv).FieldByName(attr)
 			if field.IsValid() {
-				return nestedValue(ctx, field.Interface(), chainingAttrs[1:])
+				return nestedValue(ctx, field.Interface(), chainingAttrs[1:], false)
 			}
 		}
 
@@ -35,11 +35,18 @@ func nestedValue(ctx context.Context, any interface{}, chainingAttrs []string) (
 		return nil, nil
 	}
 
-	ret, err := invoke(ctx, rv, meth, attr)
+	var ret interface{}
+	if enableCache {
+		cacheKey := genCacheKey(ctx, any, any, attr)
+		ret, err = invokeWithCache(ctx, rv, meth, attr, cacheKey)
+	} else {
+		ret, err = invoke(ctx, rv, meth, attr)
+	}
+
 	if err != nil {
 		return nil, err
 	}
-	return nestedValue(ctx, ret, chainingAttrs[1:])
+	return nestedValue(ctx, ret, chainingAttrs[1:], enableCache)
 }
 
 // invokeMethodOfAnyType calls the specified method of a value and return results.
@@ -59,12 +66,24 @@ func invokeMethodOfAnyType(ctx context.Context, any interface{}, name string, ar
 	return invokeMethodOfReflectedValue(ctx, reflect.ValueOf(any), name, args...)
 }
 
+func invokeMethodOfAnyTypeWithCache(ctx context.Context, any interface{}, name string, cacheKey *string, args ...interface{}) (interface{}, error) {
+	return invokeMethodOfReflectedValueWithCache(ctx, reflect.ValueOf(any), name, cacheKey, args...)
+}
+
 func invokeMethodOfReflectedValue(ctx context.Context, any reflect.Value, name string, args ...interface{}) (interface{}, error) {
 	method, err := findMethod(any, name)
 	if err != nil {
 		return nil, err
 	}
 	return invoke(ctx, any, method, name, args...)
+}
+
+func invokeMethodOfReflectedValueWithCache(ctx context.Context, any reflect.Value, name string, cacheKey *string, args ...interface{}) (interface{}, error) {
+	method, err := findMethod(any, name)
+	if err != nil {
+		return nil, err
+	}
+	return invokeWithCache(ctx, any, method, name, cacheKey, args...)
 }
 
 func invoke(ctx context.Context, any reflect.Value, method reflect.Value, methodName string, args ...interface{}) (interface{}, error) {
@@ -129,6 +148,24 @@ func invoke(ctx context.Context, any reflect.Value, method reflect.Value, method
 	default:
 		return nil, errors.Errorf("unexpected results returned by method '%s'", methodNameRepr)
 	}
+}
+
+func invokeWithCache(ctx context.Context, any reflect.Value, method reflect.Value, methodName string, cacheKey *string, args ...interface{}) (interface{}, error) {
+	if isCacheKeyValid(cacheKey) {
+		if ret, err := portalCache.Get(ctx, *cacheKey); err == nil {
+			return ret, nil
+		}
+	}
+
+	ret, err := invoke(ctx, any, method, methodName, args...)
+
+	if isCacheKeyValid(cacheKey) && err == nil {
+		if err = portalCache.Set(ctx, *cacheKey, ret); err != nil {
+			return ret, errors.WithStack(err)
+		}
+		return ret, nil
+	}
+	return ret, errors.WithStack(err)
 }
 
 func findMethod(any reflect.Value, name string) (reflect.Value, error) {

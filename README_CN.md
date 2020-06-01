@@ -175,6 +175,43 @@ func main() {
 1. 当序列化 Schema 列表时，会分析 Schema 中有无标记了 `async` 的字段，如果存在的话，则使用并发填充策略；否则只在当前 goroutine 中完成序列化；
 1. 可以在 Dump 时添加 `portal.DisableConcurrency()` 禁用并发序列化的功能。
 
+# 缓存策略控制
+1. 当 `portal.SetCache(portal.DefaultCache)` 被设置之后，字段维度的缓存会被开启；
+1. 以下情况下缓存会被禁用。Schema 字段中标记了 `portal:"diablecache"` 的 Tag； 被序列化的 Schema 定义了 `DisableCache() bool` 方法；序列化时设置了 `portal.DisableCache()` 选项；
+1. 缓存 key 是由 model 结构体的地址决定，GC 回收 model 时缓存就会失效，因此要避免如下写法；
+```go
+type User struct {
+    ID int
+}
+
+func (u *User) Score() int {
+    return getScoreByID(u.ID)
+}
+
+type UserSchema struct {
+    Score int `portal:"attr:Score"`
+}
+
+var user = User{ID: 1}
+var ret UserSchema
+
+portal.Dump(&ret, &user) // => user_1's grade
+// user.ID = 2
+portal.Dump(&ret, &user) // => will still get user_1's grade
+```
+A better way might be
+```go
+portal.Dump(&ret, &user) // => user_1's score
+user2 := User{ID: 2}
+portal.Dump(&ret, &user) // => user_2's score
+
+// 或者下面这样
+portal.Dump(&ret, &user) // => user_1's score
+user = copy(user)
+user.ID = 2
+portal.Dump(&ret, &user) // => user_2's score
+````
+
 # 核心 APIs
 
 ```go

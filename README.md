@@ -177,6 +177,43 @@ To learn more about [portal](https://github.com/iFaceless/portal), please read t
 1. When dumping to multiple schemas, portal will do it concurrently if any fields in the schema are tagged with `protal:"async"`.
 1. You can always disable concurrency strategy with option `portal.DisableConcurrency()`.
 
+# Cache Strategy
+1. Cache is implemented in the field level when `portal.SetCache(portal.DefaultCache)` is configured.
+1. Cache will be disabled by tagging the fields with `portal:"disablecache"` or by defining a `PortalDisableCache() bool` meth for the schema struct, or by a `portal.DisableCache()` option setting while dumping.
+1. Cache keys are in determined by the model structs' addresses, which means the invalidation is dependent on the time GC revokes the model struct. So please avoid the snippet as follows.
+```go
+type User struct {
+    ID int
+}
+
+func (u *User) Score() int {
+    return getScoreByID(u.ID)
+}
+
+type UserSchema struct {
+    Score int `portal:"attr:Score"`
+}
+
+var user = User{ID: 1}
+var ret UserSchema
+
+portal.Dump(&ret, &user) // => user_1's score
+// user.ID = 2
+portal.Dump(&ret, &user) // => will still get user_1's score
+```
+A better way might be
+```go
+portal.Dump(&ret, &user) // => user_1's score
+user2 := User{ID: 2}
+portal.Dump(&ret, &user) // => user_2's score
+
+// or like this
+portal.Dump(&ret, &user) // => user_1's score
+user = copy(user)
+user.ID = 2
+portal.Dump(&ret, &user) // => user_2's score
+````
+
 # Core APIs
 
 ```go
