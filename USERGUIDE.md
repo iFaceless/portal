@@ -244,14 +244,16 @@ func (t *Timestamp) UnmarshalJSON(data []byte) error {
 
 ## Use Cache to speed up
 
-Values from functions will be cached for schema fields tagged by `ATTR` and `METH`. You can choose not using it by disabling the cache of a single field, a whole schema, or simple for one `Dump` action.
+Values from functions will be cached for schema fields tagged by `ATTR` and `METH`. You can choose not to use it by disabling the cache of a single field, a whole schema, or simple for one time `Dump`.
 
 ```go
 type StudentModel struct {
 	ID int
 }
 
+// the Meta might be costful
 func (m *StudentModel) Meta() *meta {
+    time.Sleep(100 * time.Millisecond)
 	return &meta{ID: 1}
 }
 
@@ -259,10 +261,12 @@ type StudentSchema struct {
 	Name     string           `json:"name" portal:"attr:Meta.Name"`
 	Height   int              `json:"height" portal:"attr:Meta.Height"`
 	Subjects []*SubjectSchema `json:"subjects" portal:"nested;async"`
+    
+    // NextID is a Set method, which must not be cached
 	NextID   int              `json:"next_id" portal:"meth:SetNextID;disablecache"` // no using cache
 }
 
-func (s *StudentSchema) SetCounter(m *StudentModel) int {
+func (s *StudentSchema) SetNextID(m *StudentModel) int {
 	return m.ID + 1
 }
 
@@ -271,7 +275,7 @@ type SubjectSchema struct {
 	Teacher string `json:"teacher" portal:"meth:GetInfo.Teacher"`
 }
 
-// SubjectSchema will never using cache
+// If you don't want SubjectSchema to use cache, forbidden it by implementing a PortalDisableCache method.
 func (s *StudentSchema) PortalDisableCache() bool { return true }
 
 func (s *StudentSchema) GetInfo(m *StudentModel) info {
@@ -292,4 +296,4 @@ portal.Dump(&s, &m, portal.DisableCache())
 portal.Dump(&s, &m)
 ```
 
-portal.Cacher interface{} are expected to be implemented if you'd like to replace the portal.DefaultCache and use your own.
+Incidently, portal.Cacher interface{} are expected to be implemented if you'd like to replace the portal.DefaultCache and to use your own.
