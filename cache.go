@@ -40,7 +40,7 @@ const (
 var (
 	DefaultCache    = NewLRUCache(defaultLRUSize)
 	portalCache     Cacher
-	isCacheDisabled bool
+	isCacheDisabled = false
 )
 
 // SetCache enable cache strategy
@@ -67,6 +67,10 @@ func genCacheKey(ctx context.Context, receiver interface{}, cacheObj interface{}
 // defaultCacheID is the addr of src struct
 func defaultCacheID(cacheObj interface{}) string {
 	return fmt.Sprintf("%p", cacheObj)
+}
+
+func isCacheKeyValid(cacheKey *string) bool {
+	return portalCache != nil && cacheKey != nil
 }
 
 type cachable interface {
