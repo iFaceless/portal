@@ -197,21 +197,21 @@ type UserSchema struct {
 var user = User{ID: 1}
 var ret UserSchema
 
-portal.Dump(&ret, &user) // => user_1's grade
+portal.Dump(&ret, &user) // => user_1's score
 // user.ID = 2
-portal.Dump(&ret, &user) // => will still get user_1's grade
+portal.Dump(&ret, &user) // => will still get user_1's score
 ```
 A better way might be
 ```go
-portal.Dump(&ret, &user) // => user_1's grade
+portal.Dump(&ret, &user) // => user_1's score
 user2 := User{ID: 2}
-portal.Dump(&ret, &user) // => user_2's grade
+portal.Dump(&ret, &user) // => user_2's score
 
 // or like this
-portal.Dump(&ret, &user) // => user_1's grade
+portal.Dump(&ret, &user) // => user_1's score
 user = copy(user)
 user.ID = 2
-portal.Dump(&ret, &user) // => user_2's grade
+portal.Dump(&ret, &user) // => user_2's score
 ````
 
 # Core APIs
