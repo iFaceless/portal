@@ -57,8 +57,8 @@ type ClassSchema struct {
 type StudentSchema struct {
 	FullName  string `json:"full_name,omitempty" portal:"attr:FullName"`
 	ShortName string `json:"short_name,omitempty" portal:"meth:GetShortName"`
-	Age       int    `json:"age" portal:"attr:Info.Age"`
-	Height    int    `json:"height" portal:"attr:Info.Height"`
+	Age       int    `json:"age" portal:"attr:Info.Age;async"`
+	Height    int    `json:"height" portal:"attr:Info.Height;async"`
 }
 
 func (sch *StudentSchema) GetShortName(s *Student) string {
@@ -81,13 +81,6 @@ func TestDumpWithCache(t *testing.T) {
 
 	var ss StudentSchema
 	err := Dump(&ss, &s)
-	assert.Nil(t, err)
-
-	assert.Equal(t, 1, shortNameCounter)
-	assert.Equal(t, 1, fullNameCounter)
-	assert.Equal(t, 1, infoCounter)
-
-	err = Dump(&ss, &s)
 	assert.Nil(t, err)
 
 	assert.Equal(t, 1, shortNameCounter)
@@ -121,29 +114,27 @@ func TestDumpNestedWithCache(t *testing.T) {
 	assert.Equal(t, 1, fullNameCounter)
 	assert.Equal(t, 1, infoCounter)
 	assert.Equal(t, 1, nameCounter)
-
-	err = Dump(&cc, c)
-	assert.Nil(t, err)
-
-	assert.Equal(t, 1, shortNameCounter)
-	assert.Equal(t, 1, fullNameCounter)
-	assert.Equal(t, 1, infoCounter)
-	assert.Equal(t, 1, nameCounter)
 }
 
-var weightCounter int
+var metaCounter int
 
 type Food struct {
 	ID int
 }
 
-func (f *Food) Weight() int {
-	weightCounter += 1
-	return 100
+type meta struct {
+	Weight int
+	Size   int
+}
+
+func (f *Food) Meta() meta {
+	metaCounter += 1
+	return meta{Weight: 10, Size: 20}
 }
 
 type FoodSchema struct {
-	Weight string `portal:"attr:Weight"`
+	Weight string `portal:"attr:Meta.Weight;async"`
+	Size   string `portal:"attr:Meta.Size;async"`
 }
 
 func (s *FoodSchema) PortalDisableCache() bool {
@@ -151,17 +142,19 @@ func (s *FoodSchema) PortalDisableCache() bool {
 }
 
 type FoodSchemaTwo struct {
-	Weight string `portal:"attr:Weight;disablecache"`
+	Weight string `portal:"attr:Meta.Weight;disablecache;async"`
+	Size   string `portal:"attr:Meta.Size;async"`
 }
 
 type FoodSchemaThree struct {
-	Weight string `portal:"attr:Weight"`
+	Weight string `portal:"attr:Meta.Weight;async"`
+	Size   string `portal:"attr:Meta.Size;async"`
 }
 
 func TestDumpWithCacheDisabled(t *testing.T) {
 	SetCache(DefaultCache)
 	defer SetCache(nil)
-	weightCounter = 0
+	metaCounter = 0
 
 	f := Food{
 		ID: 1,
@@ -169,23 +162,25 @@ func TestDumpWithCacheDisabled(t *testing.T) {
 
 	var ff FoodSchema
 	Dump(&ff, &f)
-	assert.Equal(t, 1, weightCounter)
-
-	Dump(&ff, &f)
-	assert.Equal(t, 2, weightCounter)
+	assert.Equal(t, 2, metaCounter)
+	metaCounter = 0
 
 	var ff2 FoodSchemaTwo
 	Dump(&ff2, &f)
-	assert.Equal(t, 3, weightCounter)
+	assert.Equal(t, 2, metaCounter)
+	metaCounter = 0
 
 	var ff3 FoodSchemaThree
 	Dump(&ff3, &f)
-	assert.Equal(t, 4, weightCounter)
-	Dump(&ff3, &f)
-	assert.Equal(t, 4, weightCounter)
+	assert.Equal(t, 1, metaCounter)
+	metaCounter = 0
+
 	Dump(&ff3, &f, DisableCache())
-	assert.Equal(t, 5, weightCounter)
+	assert.Equal(t, 2, metaCounter)
+	metaCounter = 0
+
 	SetCache(nil)
 	Dump(&ff3, &f)
-	assert.Equal(t, 6, weightCounter)
+	assert.Equal(t, 2, metaCounter)
+	metaCounter = 0
 }

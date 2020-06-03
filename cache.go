@@ -3,8 +3,7 @@ package portal
 import (
 	"context"
 	"fmt"
-
-	"github.com/bluele/gcache"
+	"sync"
 )
 
 type Cacher interface {
@@ -12,33 +11,43 @@ type Cacher interface {
 	Get(ctx context.Context, key interface{}) (interface{}, error)
 }
 
-type LRUCache struct {
-	c gcache.Cache
+type ErrNil struct{}
+
+func (e *ErrNil) Error() string {
+	return "portal cache key not found."
 }
 
-func NewLRUCache(size int) *LRUCache {
-	return &LRUCache{
-		c: gcache.New(size).LRU().Build(),
+type MapCache struct {
+	c sync.Map
+}
+
+func NewMapCache() *MapCache {
+	var sm sync.Map
+	return &MapCache{
+		c: sm,
 	}
 }
 
-var _ Cacher = (*LRUCache)(nil)
+var _ Cacher = (*MapCache)(nil)
 
-func (lru *LRUCache) Set(_ context.Context, key, value interface{}) error {
-	return lru.c.Set(key, value)
+func (m *MapCache) Set(_ context.Context, key, value interface{}) error {
+	m.c.Store(key, value)
+	return nil
 }
 
-func (lru *LRUCache) Get(_ context.Context, key interface{}) (interface{}, error) {
-	return lru.c.Get(key)
+func (m *MapCache) Get(_ context.Context, key interface{}) (interface{}, error) {
+	if v, ok := m.c.Load(key); ok {
+		return v, nil
+	}
+	return nil, &ErrNil{}
 }
 
 const (
-	cacheKeyTem    = "%s#%s#%s"
-	defaultLRUSize = 8192
+	cacheKeyTem = "%s#%s#%s"
 )
 
 var (
-	DefaultCache    = NewLRUCache(defaultLRUSize)
+	DefaultCache    = NewMapCache()
 	portalCache     Cacher
 	isCacheDisabled = false
 )
@@ -69,10 +78,28 @@ func defaultCacheID(cacheObj interface{}) string {
 	return fmt.Sprintf("%p", cacheObj)
 }
 
-func isCacheKeyValid(cacheKey *string) bool {
-	return portalCache != nil && cacheKey != nil
-}
-
 type cachable interface {
 	PortalDisableCache() bool
+}
+
+type call struct {
+	wg  sync.WaitGroup
+	val interface{}
+	err error
+}
+
+type cacheGroup struct {
+	cache Cacher
+	mu    sync.Mutex
+	m     map[interface{}]*call
+}
+
+func newCacheGroup(cache Cacher) *cacheGroup {
+	return &cacheGroup{
+		cache: cache,
+	}
+}
+
+func (cg *cacheGroup) Valid() bool {
+	return portalCache != nil && cg.cache != nil
 }

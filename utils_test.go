@@ -42,33 +42,33 @@ func TestGetNestedValue_Ok(t *testing.T) {
 	ctx := context.TODO()
 
 	c := Car{name: "xixi", Kind: MessageKind(1)}
-	r, e := nestedValue(ctx, c, []string{"Name"}, false)
+	r, e := nestedValue(ctx, c, []string{"Name"}, nil, false)
 	assert.Nil(t, e)
 	assert.Equal(t, "xixi", r.(string))
 
-	r, e = nestedValue(ctx, &c, []string{"Name"}, false)
+	r, e = nestedValue(ctx, &c, []string{"Name"}, nil, false)
 	assert.Nil(t, e)
 	assert.Equal(t, "xixi", r.(string))
 
-	r, e = nestedValue(ctx, &c, []string{"Country", "Name"}, false)
+	r, e = nestedValue(ctx, &c, []string{"Country", "Name"}, nil, false)
 	assert.Nil(t, e)
 	assert.Equal(t, "China", r.(string))
 
 	mk := MessageKind(1)
-	r, e = nestedValue(ctx, &mk, []string{"Name"}, false)
+	r, e = nestedValue(ctx, &mk, []string{"Name"}, nil, false)
 	assert.Nil(t, e)
 	assert.Equal(t, "ok", r)
 
-	r, e = nestedValue(ctx, &c, []string{"Kind", "Alias"}, false)
+	r, e = nestedValue(ctx, &c, []string{"Kind", "Alias"}, nil, false)
 	assert.Nil(t, e)
 	assert.Equal(t, "alias_ok", r)
 
 	bigCar := &BigCar{Car: c}
-	r, e = nestedValue(ctx, bigCar, []string{"Name"}, false)
+	r, e = nestedValue(ctx, bigCar, []string{"Name"}, nil, false)
 	assert.Nil(t, e)
 	assert.Equal(t, "big car", r)
 
-	r, e = nestedValue(ctx, bigCar, []string{"Kind", "Alias"}, false)
+	r, e = nestedValue(ctx, bigCar, []string{"Kind", "Alias"}, nil, false)
 	assert.Nil(t, e)
 	assert.Equal(t, "alias_failed", r)
 }
@@ -76,14 +76,14 @@ func TestGetNestedValue_Ok(t *testing.T) {
 func TestGetNestedValue_Error(t *testing.T) {
 	ctx := context.TODO()
 
-	_, e := nestedValue(ctx, nil, []string{"Name"}, false)
+	_, e := nestedValue(ctx, nil, []string{"Name"}, nil, false)
 	assert.EqualError(t, e, "object is nil")
 
 	var c = Car{name: "foo", Kind: MessageKind(1)}
-	_, e = nestedValue(ctx, &c, []string{"What"}, false)
+	_, e = nestedValue(ctx, &c, []string{"What"}, nil, false)
 	assert.Nil(t, e)
 
-	_, e = nestedValue(ctx, &c, []string{"Kind", "NotFound"}, false)
+	_, e = nestedValue(ctx, &c, []string{"Kind", "NotFound"}, nil, false)
 	assert.Nil(t, e)
 }
 
