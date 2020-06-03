@@ -151,11 +151,12 @@ func invoke(ctx context.Context, any reflect.Value, method reflect.Value, method
 }
 
 func invokeWithCache(ctx context.Context, any reflect.Value, method reflect.Value, methodName string, cg *cacheGroup, cacheKey *string, args ...interface{}) (interface{}, error) {
-	if !cg.Valid() || cacheKey == nil {
+	if !cg.valid() || cacheKey == nil {
 		ret, err := invoke(ctx, any, method, methodName, args...)
 		return ret, errors.WithStack(err)
 	}
 
+	// singleflight, only one execution under multiple goroutines
 	v, err, _ := cg.g.Do(*cacheKey, func() (interface{}, error) {
 		if ret, err := cg.cache.Get(ctx, *cacheKey); err == nil {
 			return ret, nil

@@ -86,12 +86,6 @@ type cacheGroup struct {
 	g     *singleflight.Group
 }
 
-type call struct {
-	wg  sync.WaitGroup
-	val interface{}
-	err error
-}
-
 func newCacheGroup(cache Cacher) *cacheGroup {
 	return &cacheGroup{
 		cache: cache,
@@ -99,6 +93,6 @@ func newCacheGroup(cache Cacher) *cacheGroup {
 	}
 }
 
-func (cg *cacheGroup) Valid() bool {
+func (cg *cacheGroup) valid() bool {
 	return portalCache != nil && cg.cache != nil
 }
