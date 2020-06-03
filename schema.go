@@ -66,7 +66,7 @@ func newSchema(v interface{}, parent ...*schema) *schema {
 		rawValue:             rawValue,
 		fieldAliasMapTagName: "json",
 		cacheDisabled:        cacheDisabled,
-		cacheGroup:           newCacheGroup(NewMapCache()),
+		cacheGroup:           newCacheGroup(newMapCache()),
 	}
 
 	if len(parent) > 0 {

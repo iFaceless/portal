@@ -21,7 +21,7 @@ type MapCache struct {
 	c map[interface{}]interface{}
 }
 
-func NewMapCache() *MapCache {
+func newMapCache() *MapCache {
 	return &MapCache{
 		c: make(map[interface{}]interface{}),
 	}
@@ -46,7 +46,7 @@ const (
 )
 
 var (
-	DefaultCache    = NewMapCache()
+	DefaultCache    = newMapCache()
 	portalCache     Cacher
 	isCacheDisabled = false
 )
