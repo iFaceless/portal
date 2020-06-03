@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 	"sync"
+
+	"golang.org/x/sync/singleflight"
 )
 
 type Cacher interface {
@@ -18,24 +20,22 @@ func (e *ErrNil) Error() string {
 }
 
 type MapCache struct {
-	c map[interface{}]interface{}
+	c sync.Map
 }
 
 func newMapCache() *MapCache {
-	return &MapCache{
-		c: make(map[interface{}]interface{}),
-	}
+	return &MapCache{}
 }
 
 var _ Cacher = (*MapCache)(nil)
 
 func (m *MapCache) Set(_ context.Context, key, value interface{}) error {
-	m.c[key] = value
+	m.c.Store(key, value)
 	return nil
 }
 
 func (m *MapCache) Get(_ context.Context, key interface{}) (interface{}, error) {
-	if v, ok := m.c[key]; ok {
+	if v, ok := m.c.Load(key); ok {
 		return v, nil
 	}
 	return nil, &ErrNil{}
@@ -83,8 +83,7 @@ type cachable interface {
 
 type cacheGroup struct {
 	cache Cacher
-	mu    sync.Mutex
-	m     map[interface{}]*call
+	g     *singleflight.Group
 }
 
 type call struct {
@@ -96,7 +95,7 @@ type call struct {
 func newCacheGroup(cache Cacher) *cacheGroup {
 	return &cacheGroup{
 		cache: cache,
-		m:     make(map[interface{}]*call),
+		g:     &singleflight.Group{},
 	}
 }
 

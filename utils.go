@@ -155,37 +155,20 @@ func invokeWithCache(ctx context.Context, any reflect.Value, method reflect.Valu
 		ret, err := invoke(ctx, any, method, methodName, args...)
 		return ret, errors.WithStack(err)
 	}
-	// for multiple goroutines, only one execution for a cacheKey at a time
-	cg.mu.Lock()
-	if ret, err := cg.cache.Get(ctx, *cacheKey); err == nil {
-		cg.mu.Unlock()
-		return ret, nil
-	}
 
-	if c, ok := cg.m[*cacheKey]; ok {
-		cg.mu.Unlock()
-		c.wg.Wait()
-		return c.val, errors.WithStack(c.err)
-	}
+	v, err, _ := cg.g.Do(*cacheKey, func() (interface{}, error) {
+		if ret, err := cg.cache.Get(ctx, *cacheKey); err == nil {
+			return ret, nil
+		}
+		ret, err := invoke(ctx, any, method, methodName, args...)
+		if err == nil {
+			cg.cache.Set(ctx, *cacheKey, ret)
+			return ret, nil
+		}
+		return ret, errors.WithStack(err)
+	})
 
-	c := new(call)
-	c.wg.Add(1)
-	cg.m[*cacheKey] = c
-	cg.mu.Unlock()
-
-	c.val, c.err = invoke(ctx, any, method, methodName, args...)
-	c.wg.Done()
-
-	cg.mu.Lock()
-	delete(cg.m, *cacheKey)
-	cg.mu.Unlock()
-
-	if c.err == nil {
-		cg.cache.Set(ctx, *cacheKey, c.val)
-		return c.val, nil
-	}
-
-	return c.val, errors.WithStack(c.err)
+	return v, err
 }
 
 func findMethod(any reflect.Value, name string) (reflect.Value, error) {
