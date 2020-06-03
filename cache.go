@@ -81,16 +81,16 @@ type cachable interface {
 	PortalDisableCache() bool
 }
 
-type call struct {
-	wg  sync.WaitGroup
-	val interface{}
-	err error
-}
-
 type cacheGroup struct {
 	cache Cacher
 	mu    sync.Mutex
 	m     map[interface{}]*call
+}
+
+type call struct {
+	wg  sync.WaitGroup
+	val interface{}
+	err error
 }
 
 func newCacheGroup(cache Cacher) *cacheGroup {

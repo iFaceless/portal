@@ -155,6 +155,7 @@ func invokeWithCache(ctx context.Context, any reflect.Value, method reflect.Valu
 		ret, err := invoke(ctx, any, method, methodName, args...)
 		return ret, errors.WithStack(err)
 	}
+	// for multiple goroutines, only one execution for a cacheKey at a time
 	cg.mu.Lock()
 	if ret, err := cg.cache.Get(ctx, *cacheKey); err == nil {
 		cg.mu.Unlock()
