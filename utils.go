@@ -155,17 +155,12 @@ func invokeWithCache(ctx context.Context, any reflect.Value, method reflect.Valu
 		ret, err := invoke(ctx, any, method, methodName, args...)
 		return ret, errors.WithStack(err)
 	}
-
 	cg.mu.Lock()
-	ret, err := cg.cache.Get(ctx, *cacheKey)
-	if err == nil {
+	if ret, err := cg.cache.Get(ctx, *cacheKey); err == nil {
 		cg.mu.Unlock()
 		return ret, nil
 	}
 
-	if cg.m == nil {
-		cg.m = make(map[interface{}]*call)
-	}
 	if c, ok := cg.m[*cacheKey]; ok {
 		cg.mu.Unlock()
 		c.wg.Wait()
@@ -174,20 +169,21 @@ func invokeWithCache(ctx context.Context, any reflect.Value, method reflect.Valu
 
 	c := new(call)
 	c.wg.Add(1)
-	cg.m[cacheKey] = c
+	cg.m[*cacheKey] = c
 	cg.mu.Unlock()
 
 	c.val, c.err = invoke(ctx, any, method, methodName, args...)
 	c.wg.Done()
 
 	cg.mu.Lock()
-	delete(cg.m, cacheKey)
+	delete(cg.m, *cacheKey)
 	cg.mu.Unlock()
 
 	if c.err == nil {
-		cg.cache.Set(ctx, *cacheKey, ret)
-		return ret, nil
+		cg.cache.Set(ctx, *cacheKey, c.val)
+		return c.val, nil
 	}
+
 	return c.val, errors.WithStack(c.err)
 }
 

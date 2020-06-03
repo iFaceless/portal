@@ -18,25 +18,24 @@ func (e *ErrNil) Error() string {
 }
 
 type MapCache struct {
-	c sync.Map
+	c map[interface{}]interface{}
 }
 
 func NewMapCache() *MapCache {
-	var sm sync.Map
 	return &MapCache{
-		c: sm,
+		c: make(map[interface{}]interface{}),
 	}
 }
 
 var _ Cacher = (*MapCache)(nil)
 
 func (m *MapCache) Set(_ context.Context, key, value interface{}) error {
-	m.c.Store(key, value)
+	m.c[key] = value
 	return nil
 }
 
 func (m *MapCache) Get(_ context.Context, key interface{}) (interface{}, error) {
-	if v, ok := m.c.Load(key); ok {
+	if v, ok := m.c[key]; ok {
 		return v, nil
 	}
 	return nil, &ErrNil{}
@@ -97,6 +96,7 @@ type cacheGroup struct {
 func newCacheGroup(cache Cacher) *cacheGroup {
 	return &cacheGroup{
 		cache: cache,
+		m:     make(map[interface{}]*call),
 	}
 }
 

@@ -50,7 +50,7 @@ func (s *Student) Info() *studentInfo {
 }
 
 type ClassSchema struct {
-	Students []*StudentSchema `json:"students" portal:"nested;async"`
+	Students []*StudentSchema `json:"students" portal:"nested"`
 	Name     string           `json:"name" portal:"attr:Name"`
 }
 
@@ -142,7 +142,7 @@ func (s *FoodSchema) PortalDisableCache() bool {
 }
 
 type FoodSchemaTwo struct {
-	Weight string `portal:"attr:Meta.Weight;disablecache;async"`
+	Weight string `portal:"attr:Meta.Weight;async;disablecache"`
 	Size   string `portal:"attr:Meta.Size;async"`
 }
 
