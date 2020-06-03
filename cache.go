@@ -3,8 +3,9 @@ package portal
 import (
 	"context"
 	"fmt"
+	"sync"
 
-	"github.com/bluele/gcache"
+	"golang.org/x/sync/singleflight"
 )
 
 type Cacher interface {
@@ -12,33 +13,40 @@ type Cacher interface {
 	Get(ctx context.Context, key interface{}) (interface{}, error)
 }
 
-type LRUCache struct {
-	c gcache.Cache
+type ErrNil struct{}
+
+func (e *ErrNil) Error() string {
+	return "portal cache key not found."
 }
 
-func NewLRUCache(size int) *LRUCache {
-	return &LRUCache{
-		c: gcache.New(size).LRU().Build(),
+type MapCache struct {
+	c sync.Map
+}
+
+func newMapCache() *MapCache {
+	return &MapCache{}
+}
+
+var _ Cacher = (*MapCache)(nil)
+
+func (m *MapCache) Set(_ context.Context, key, value interface{}) error {
+	m.c.Store(key, value)
+	return nil
+}
+
+func (m *MapCache) Get(_ context.Context, key interface{}) (interface{}, error) {
+	if v, ok := m.c.Load(key); ok {
+		return v, nil
 	}
-}
-
-var _ Cacher = (*LRUCache)(nil)
-
-func (lru *LRUCache) Set(_ context.Context, key, value interface{}) error {
-	return lru.c.Set(key, value)
-}
-
-func (lru *LRUCache) Get(_ context.Context, key interface{}) (interface{}, error) {
-	return lru.c.Get(key)
+	return nil, &ErrNil{}
 }
 
 const (
-	cacheKeyTem    = "%s#%s#%s"
-	defaultLRUSize = 8192
+	cacheKeyTem = "%s#%s#%s"
 )
 
 var (
-	DefaultCache    = NewLRUCache(defaultLRUSize)
+	DefaultCache    = newMapCache()
 	portalCache     Cacher
 	isCacheDisabled = false
 )
@@ -69,10 +77,22 @@ func defaultCacheID(cacheObj interface{}) string {
 	return fmt.Sprintf("%p", cacheObj)
 }
 
-func isCacheKeyValid(cacheKey *string) bool {
-	return portalCache != nil && cacheKey != nil
-}
-
 type cachable interface {
 	PortalDisableCache() bool
+}
+
+type cacheGroup struct {
+	cache Cacher
+	g     *singleflight.Group
+}
+
+func newCacheGroup(cache Cacher) *cacheGroup {
+	return &cacheGroup{
+		cache: cache,
+		g:     &singleflight.Group{},
+	}
+}
+
+func (cg *cacheGroup) valid() bool {
+	return portalCache != nil && cg.cache != nil
 }

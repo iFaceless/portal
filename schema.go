@@ -19,6 +19,7 @@ type schema struct {
 	parent *schema
 
 	cacheDisabled bool
+	cacheGroup    *cacheGroup
 }
 
 func newSchema(v interface{}, parent ...*schema) *schema {
@@ -65,6 +66,7 @@ func newSchema(v interface{}, parent ...*schema) *schema {
 		rawValue:             rawValue,
 		fieldAliasMapTagName: "json",
 		cacheDisabled:        cacheDisabled,
+		cacheGroup:           newCacheGroup(newMapCache()),
 	}
 
 	if len(parent) > 0 {
@@ -162,21 +164,21 @@ func (s *schema) fieldValueFromSrc(ctx context.Context, field *schemaField, v in
 			ret, err = invokeMethodOfAnyType(ctx, s.rawValue, m, v)
 		} else {
 			cacheKey := genCacheKey(ctx, s.rawValue, v, m)
-			ret, err = invokeMethodOfAnyTypeWithCache(ctx, s.rawValue, m, cacheKey, v)
+			ret, err = invokeMethodOfAnyTypeWithCache(ctx, s.rawValue, m, s.cacheGroup, cacheKey, v)
 		}
 
 		if err != nil {
 			return nil, fmt.Errorf("failed to get value: %s", err)
 		}
 		if len(attrs) > 0 {
-			return nestedValue(ctx, ret, attrs, !disableCache)
+			return nestedValue(ctx, ret, attrs, nil, !disableCache)
 		}
 		return ret, nil
 	} else if field.hasChainingAttrs() {
 		disableCache := noCache || field.isCacheDisabled()
-		return nestedValue(ctx, v, field.chainingAttrs(), !disableCache)
+		return nestedValue(ctx, v, field.chainingAttrs(), s.cacheGroup, !disableCache)
 	} else {
-		return nestedValue(ctx, v, []string{field.Name()}, false)
+		return nestedValue(ctx, v, []string{field.Name()}, nil, false)
 	}
 
 	return

@@ -182,7 +182,6 @@ type Hogwarts struct {
 }
 
 func (h *Hogwarts) Addr() string {
-	time.Sleep(100 * time.Millisecond)
 	return "addr"
 }
 
@@ -198,11 +197,13 @@ type HogwartsSchema struct {
 type HouseSchema struct {
 	Name  string `portal:"meth:GetMeta.Name;async"`
 	Color string `portal:"meth:GetMeta.Color;async"`
+	Desc  string `portal:"meth:GetMeta.Desc;async"`
 }
 
 type Meta struct {
 	Name  string
 	Color string
+	Desc  string
 }
 
 func makeHouses(count int) (ret []*House) {
@@ -219,6 +220,7 @@ func (s *HouseSchema) GetMeta(m *House) Meta {
 	return Meta{
 		Name:  "name",
 		Color: "red",
+		Desc:  "desc",
 	}
 }
 
@@ -235,7 +237,6 @@ func BenchmarkDumpManyWithCache(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		var schemas HogwartsSchema
 		_ = Dump(&schemas, hogwarts)
-		_ = Dump(&schemas, hogwarts)
 	}
 }
 
@@ -250,7 +251,6 @@ func BenchmarkDumpManyWithoutCache(b *testing.B) {
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		var schemas HogwartsSchema
-		_ = Dump(&schemas, hogwarts)
 		_ = Dump(&schemas, hogwarts)
 	}
 }
