@@ -180,39 +180,8 @@ To learn more about [portal](https://github.com/iFaceless/portal), please read t
 # Cache Strategy
 1. Cache is implemented in the field level when `portal.SetCache(portal.DefaultCache)` is configured.
 1. Cache will be disabled by tagging the fields with `portal:"disablecache"` or by defining a `PortalDisableCache() bool` meth for the schema struct, or by a `portal.DisableCache()` option setting while dumping.
-1. Cache keys are in determined by the model structs' addresses, which means the invalidation is dependent on the time GC revokes the model struct. So please avoid the snippet as follows.
-```go
-type User struct {
-    ID int
-}
+1. Cache is available for one schema's one time dump, after the dump, the cache will be invalidated.
 
-func (u *User) Score() int {
-    return getScoreByID(u.ID)
-}
-
-type UserSchema struct {
-    Score int `portal:"attr:Score"`
-}
-
-var user = User{ID: 1}
-var ret UserSchema
-
-portal.Dump(&ret, &user) // => user_1's score
-// user.ID = 2
-portal.Dump(&ret, &user) // => will still get user_1's score
-```
-A better way might be
-```go
-portal.Dump(&ret, &user) // => user_1's score
-user2 := User{ID: 2}
-portal.Dump(&ret, &user) // => user_2's score
-
-// or like this
-portal.Dump(&ret, &user) // => user_1's score
-user = copy(user)
-user.ID = 2
-portal.Dump(&ret, &user) // => user_2's score
-````
 
 # Core APIs
 
