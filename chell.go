@@ -298,7 +298,7 @@ func (c *Chell) dumpMany(ctx context.Context, dst, src interface{}, onlyFields, 
 		if field != "" {
 			panic(fmt.Sprintf("input src must be a slice, current processing field is `%s`", field))
 		} else {
-			panic(fmt.Sprintf("input src must be a slice"))
+			panic("input src must be a slice")
 		}
 	}
 

@@ -2,6 +2,7 @@ package portal
 
 import (
 	"fmt"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -116,7 +117,7 @@ func TestDumpNestedWithCache(t *testing.T) {
 	assert.Equal(t, 1, nameCounter)
 }
 
-var metaCounter int
+var metaCounter int32
 
 type Food struct {
 	ID int
@@ -128,7 +129,7 @@ type meta struct {
 }
 
 func (f *Food) Meta() meta {
-	metaCounter += 1
+	atomic.AddInt32(&metaCounter, 1)
 	return meta{Weight: 10, Size: 20}
 }
 
@@ -154,33 +155,38 @@ type FoodSchemaThree struct {
 func TestDumpWithCacheDisabled(t *testing.T) {
 	SetCache(DefaultCache)
 	defer SetCache(nil)
-	metaCounter = 0
+	atomic.StoreInt32(&metaCounter, 0)
 
 	f := Food{
 		ID: 1,
 	}
 
 	var ff FoodSchema
-	Dump(&ff, &f)
-	assert.Equal(t, 2, metaCounter)
-	metaCounter = 0
+	err := Dump(&ff, &f)
+	assert.Nil(t, err)
+	assert.Equal(t, int32(2), atomic.LoadInt32(&metaCounter))
+	atomic.StoreInt32(&metaCounter, 0)
 
 	var ff2 FoodSchemaTwo
-	Dump(&ff2, &f)
-	assert.Equal(t, 2, metaCounter)
-	metaCounter = 0
+	err = Dump(&ff2, &f)
+	assert.Nil(t, err)
+	assert.Equal(t, int32(2), atomic.LoadInt32(&metaCounter))
+	atomic.StoreInt32(&metaCounter, 0)
 
 	var ff3 FoodSchemaThree
-	Dump(&ff3, &f)
-	assert.Equal(t, 1, metaCounter)
-	metaCounter = 0
+	err = Dump(&ff3, &f)
+	assert.Nil(t, err)
+	assert.Equal(t, int32(1), atomic.LoadInt32(&metaCounter))
+	atomic.StoreInt32(&metaCounter, 0)
 
-	Dump(&ff3, &f, DisableCache())
-	assert.Equal(t, 2, metaCounter)
-	metaCounter = 0
+	err = Dump(&ff3, &f, DisableCache())
+	assert.Nil(t, err)
+	assert.Equal(t, int32(2), atomic.LoadInt32(&metaCounter))
+	atomic.StoreInt32(&metaCounter, 0)
 
 	SetCache(nil)
-	Dump(&ff3, &f)
-	assert.Equal(t, 2, metaCounter)
-	metaCounter = 0
+	err = Dump(&ff3, &f)
+	assert.Nil(t, err)
+	assert.Equal(t, int32(2), atomic.LoadInt32(&metaCounter))
+	atomic.StoreInt32(&metaCounter, 0)
 }
