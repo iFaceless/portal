@@ -163,7 +163,10 @@ func invokeWithCache(ctx context.Context, any reflect.Value, method reflect.Valu
 		}
 		ret, err := invoke(ctx, any, method, methodName, args...)
 		if err == nil {
-			cg.cache.Set(ctx, *cacheKey, ret)
+			err = cg.cache.Set(ctx, *cacheKey, ret)
+			if err != nil {
+				return nil, errors.WithStack(err)
+			}
 			return ret, nil
 		}
 		return ret, errors.WithStack(err)
