@@ -15,3 +15,17 @@ func SetDebug(v bool) {
 		logger.SetLevel(logrus.InfoLevel)
 	}
 }
+
+type LogLevel = logrus.Level
+
+const (
+	ErrorLevel = logrus.ErrorLevel
+	WarnLevel  = logrus.WarnLevel
+	InfoLevel  = logrus.InfoLevel
+	DebugLevel = logrus.DebugLevel
+)
+
+// SetLogLevel block the logs who's level is lower
+func SetLogLevel(level LogLevel) {
+	logger.SetLevel(level)
+}
