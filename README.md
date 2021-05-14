@@ -190,7 +190,7 @@ func New(opts ...Option) (*Chell, error)
 func Dump(dst, src interface{}, opts ...Option) error 
 func DumpWithContext(ctx context.Context, dst, src interface{}, opts ...Option)
 func SetDebug(v bool)
-func SetLevel(level LogLevel)
+func SetLogLevel(level LogLevel)
 func SetMaxPoolSize(size int)
 func CleanUp()
 ```
